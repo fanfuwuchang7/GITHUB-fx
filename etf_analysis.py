@@ -3939,10 +3939,16 @@ def analyze_events(breadth, market):
         items.append({"type": "涨跌停比", "title": "ADR 极限值",
                       "detail": comments["adr_limit"], "source": "市场评论", "time": ""})
     if nb.get("date"):
+        # 沪深港通已不再逐日披露净买入，公开接口该字段长期为 0 且 history 为空。
+        # 不要把 0 当成「今日零流入」展示，也不要编造替代值。
+        _v = num(nb.get("fund_flow_net_in"))
+        if _v:
+            _detail = "数据日期 {}，净流入 {}（接口原值）".format(nb["date"], _v)
+        else:
+            _detail = ("数据日期 {}，公开接口未返回净流入（逐日净买入已停止披露，"
+                       "本项不估算、不以 0 充当数据）".format(nb["date"]))
         items.append({"type": "北向", "title": "陆股通资金",
-                      "detail": "数据日期 {}，净流入字段 {}（收盘后常清空，仅供参考）".format(
-                          nb["date"], nb.get("fund_flow_net_in")),
-                      "source": "", "time": ""})
+                      "detail": _detail, "source": "", "time": ""})
 
     signals = []
     if news.get("title"):
@@ -6514,6 +6520,321 @@ def inline_svg(md):
                   lambda m: CHART_STORE.get(m.group(2), ""), md)
 
 
+VIZ_CSS = """
+*{box-sizing:border-box}
+body{font-family:'WenQuanYi Micro Hei',-apple-system,'Microsoft YaHei',sans-serif;max-width:1180px;margin:0 auto;padding:16px 20px 28px;color:#222;background:#f6f8fb}
+h1{font-size:19px;margin:0 0 6px;color:#1a4d8f}
+.statusbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:0 0 12px;font-size:12px;color:#6b7684}
+.statusbar b{font-size:15px;color:#1d3f66}
+.badge{display:inline-block;padding:2px 9px;border-radius:999px;background:#e8f1ff;color:#25599b;font-size:12px;font-weight:600}
+.badge.warn{background:#fff3e0;color:#9a5b00}
+.kpis{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:10px;margin:0 0 12px}
+.kpi{display:flex;align-items:center;gap:10px;min-width:0;background:#fff;border:1px solid #e3e9f2;border-radius:10px;padding:10px 12px;min-height:76px;box-shadow:0 1px 3px rgba(30,60,100,.06)}
+.kpi b{display:block;font-size:19px;color:#25476b;line-height:1.2;font-variant-numeric:tabular-nums;white-space:nowrap}
+.kpi span{display:block;font-size:11.5px;color:#6b7684;margin-top:2px}
+.kpi em{display:block;font-style:normal;font-size:11px;color:#8895a5;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.kpi .kbox{flex:1;min-width:0}
+.kpi .ring{position:relative;flex:0 0 44px;width:44px;height:44px;border-radius:50%}
+.kpi .ring::after{content:'';position:absolute;inset:7px;background:#fff;border-radius:50%}
+.kpi .kbar{height:6px;background:#eef2f7;border-radius:4px;overflow:hidden;margin-top:7px}
+.kpi .kbar i{display:block;height:100%;border-radius:4px}
+.dash{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.card{min-width:0;background:#fff;border:1px solid #e3e9f2;border-radius:10px;padding:10px 12px;box-shadow:0 1px 3px rgba(30,60,100,.06);cursor:zoom-in}
+.card h4{margin:0 0 6px;font-size:12.5px;font-weight:600;color:#33465c}
+.chart svg{display:block;width:100%;height:auto;max-width:none;margin:0;border:0}
+.hb{display:grid;grid-template-columns:88px 1fr 46px;gap:8px;align-items:center;font-size:11px;color:#4a5a70;margin:4px 0}
+.hb-track{position:relative;height:11px;background:#f4f7fb;border-radius:3px}
+.hb-track::before{content:'';position:absolute;left:50%;top:-1px;bottom:-1px;width:1px;background:#c9d4e2}
+.hb-track i{position:absolute;top:2px;height:7px;border-radius:2px}
+.hb-track i.pos{background:#e05a4f}
+.hb-track i.neg{background:#2e9e7b}
+.hb b{text-align:right;font-variant-numeric:tabular-nums;font-weight:600;color:#33465c}
+.stack{display:flex;height:16px;border-radius:5px;overflow:hidden;background:#eef2f7;margin:10px 0 4px}
+.stack i{display:block;height:100%}
+.slegend{display:flex;justify-content:space-between;font-size:11px;color:#6b7684;margin-bottom:6px}
+.slegend b{color:#33465c}
+.srcdata[hidden]{display:none}
+#lightbox{position:fixed;inset:0;background:rgba(12,22,38,.85);display:none;align-items:center;justify-content:center;z-index:99;padding:24px;cursor:zoom-out}
+#lightbox.on{display:flex}
+#lightbox .lb-in{background:#fff;border-radius:10px;padding:18px;width:min(1080px,96vw);max-height:88vh;overflow:auto;cursor:default}
+#lightbox h4{margin:0 0 12px;font-size:15px;color:#1a4d8f}
+#lightbox .hb{grid-template-columns:140px 1fr 70px;font-size:13px}
+.dash .card:last-child:nth-child(odd){grid-column:1/-1}
+.dash .card:last-child:nth-child(odd) .chart svg{max-width:560px!important;margin:0 auto}
+@media(max-width:980px){.kpis{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:720px){.dash{grid-template-columns:1fr}.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
+"""
+
+VIZ_JS = """
+<div id='lightbox'><div class='lb-in' id='lightbox-in'></div></div>
+<script>
+(function(){
+var lb=document.getElementById('lightbox'),box=document.getElementById('lightbox-in');
+if(!lb||!box)return;
+[].slice.call(document.querySelectorAll('.dash .card')).forEach(function(el){
+  el.onclick=function(){var c=el.querySelector('.chart'),h=el.querySelector('h4');
+    if(!c)return;box.innerHTML='<h4>'+(h?h.textContent:'')+'</h4>'+c.innerHTML;
+    lb.classList.add('on');document.body.style.overflow='hidden';};});
+lb.onclick=function(){lb.classList.remove('on');document.body.style.overflow='';};
+document.addEventListener('keydown',function(e){if(e.key==='Escape'){
+  lb.classList.remove('on');document.body.style.overflow='';}});
+})();
+</script>
+"""
+
+
+def _viz_rows(html, marker):
+    """取某小节标题后第一张表的纯文本单元格。"""
+    m = re.search(re.escape(marker) +
+                  r".*?(<div class='tw'><table>.*?</table></div>)", html, re.S)
+    if not m:
+        return []
+    rows = []
+    for tr in re.findall(r"<tr>(.*?)</tr>", m.group(1), re.S):
+        cells = [re.sub(r"<[^>]+>", "", c).strip() for c in
+                 re.findall(r"<t[dh][^>]*>(.*?)</t[dh]>", tr, re.S)]
+        if cells:
+            rows.append(cells)
+    return rows
+
+
+def _viz_num(s):
+    m = re.search(r"[+\-]?\d+(?:\.\d+)?", str(s or "").replace(",", ""))
+    return float(m.group()) if m else None
+
+
+def _verdict_text(concl_html):
+    """结论首句，去掉括号补充与情景前缀，压成一行短结论。"""
+    t = re.sub(r"<[^>]+>", "", concl_html)
+    t = re.sub(r"^一句话结论[：:]?\s*", "", t)
+    t = t.split("。")[0]
+    t = re.sub(r"[（(][^）)]*[）)]", "", t)
+    t = t.replace("基准情景 ", "")
+    t = re.sub(r"\s+", " ", t).strip("，；; ")
+    return (t or "详见图表") + "。"
+
+
+def _verdict_html(text):
+    """顶部结论条：内联样式，已生成页面无需追加 CSS 即可同步。"""
+    return ("<!--verdict-start--><div style='display:flex;align-items:center;"
+            "gap:10px;background:#f2f7ff;border-left:3px solid #3b7dd8;"
+            "border-radius:6px;padding:9px 12px;margin:0 0 10px'>"
+            "<span style='flex:0 0 auto;background:#3b7dd8;color:#fff;"
+            "border-radius:4px;padding:2px 8px;font-size:11px;font-weight:600'>"
+            "结论</span><b style='font-size:13.5px;font-weight:600;"
+            "color:#25476b;line-height:1.5'>{}</b></div>"
+            "<!--verdict-end-->").format(esc(text))
+
+
+def refresh_verdict(html):
+    """已生成的看板：从隐藏锚点重取结论，插入或更新顶部结论条。"""
+    m = re.search(r"<blockquote><strong>一句话结论</strong>.*?</blockquote>",
+                  html, re.S)
+    if not m:
+        return html
+    bar = _verdict_html(_verdict_text(m.group(0)))
+    if "<!--verdict-start-->" in html:
+        return re.sub(r"<!--verdict-start-->.*?<!--verdict-end-->",
+                      lambda _: bar, html, count=1, flags=re.S)
+    return re.sub(r"(<h1>.*?</h1>)", lambda mm: mm.group(1) + bar,
+                  html, count=1, flags=re.S)
+
+
+def sync_fundflow_out(html, report_html):
+    """给已生成的看板补「行业流出 Top」卡：数据取自完整报告 4.3 表。"""
+    if "行业流出 Top" in html:
+        return html
+    rows = _viz_rows(report_html, "4.3 行业主力净流出")[1:]
+    pairs = [(r[0][:5], _viz_num(r[2])) for r in rows if len(r) > 2]
+    pairs = [(n, v) for n, v in pairs if v is not None]
+    if not pairs:
+        return html
+    svg = svg_bars([n for n, _ in pairs], [v for _, v in pairs],
+                   "行业主力净流出 Top（亿元）", fmt="{:+.0f}")
+    if not svg:
+        return html
+    card = ("<section class='card'><h4>行业流出 Top</h4>"
+            "<div class='chart'>{}</div></section>").format(svg)
+    html = html.replace("<h4>行业资金 Top</h4>", "<h4>行业流入 Top</h4>", 1)
+    m = re.search(r"(<section class='card'><h4>行业流入 Top</h4>"
+                  r"<div class='chart'>.*?</div></section>)", html, re.S)
+    if not m:
+        return html
+    return html[:m.end()] + card + html[m.end():]
+
+
+def polish_dashboard(html):
+    """只输出「结果可视化看板」：分析章节、论证文字、样本池图表全部删除。
+
+    页面只剩结论条 + 状态条 + 6 个 KPI + 8 张结果图，两屏内看完；点击卡片可放大。
+    hidden 区只留 send_mail.py 抽取邮件正文用的机器锚点（要点 / 结论首句 /
+    执行摘要表），不渲染，也不含分析步骤。已生成的看板只同步顶部结论条，保证幂等。
+    """
+    if "<!--viz-start-->" in html:
+        return refresh_verdict(html)
+    mb = re.search(r"(<body[^>]*>)(.*)(</body>)", html, re.S)
+    if not mb:
+        return html
+    body = mb.group(2)
+
+    pts = re.search(r"<p><strong>今日要点（30 秒版）</strong></p>"
+                    r"(?:\s*<p class='li'>.*?</p>)+", body, re.S)
+    concl = re.search(r"<blockquote><strong>一句话结论</strong>.*?</blockquote>",
+                      body, re.S)
+    summ = re.search(r"<h2 id='s1'>[^<]*</h2>\s*"
+                     r"(<div class='tw'><table>.*?</table></div>)", body, re.S)
+    intr = re.search(r"<blockquote>[^<]*<strong>盘中口径</strong>.*?</blockquote>",
+                     body, re.S)
+    if not (pts and concl and summ):
+        return html
+
+    raw = re.sub(r"<[^>]+>", " ", pts.group(0) + " " + concl.group(0))
+
+    def g(pat):
+        mm = re.search(pat, raw)
+        return _viz_num(mm.group(1)) if mm else None
+
+    amount = g(r"成交额\s*([\d,.]+)\s*亿")
+    ratio = g(r"上涨占比\s*([\d.]+)%")
+    chg = g(r"较昨日同时点\s*([+\-\d.]+)%")
+    net = g(r"净额\s*([+\-\d.]+)\s*亿")
+    up_n, dn_n = g(r"上涨\s*([\d,]+)\s*只"), g(r"下跌\s*([\d,]+)\s*只")
+    lu, ld = g(r"涨停\s*(\d+)"), g(r"跌停\s*(\d+)")
+    quality = g(r"数据质量\s*(\d+)%")
+    pm = re.search(r"自建画像\s*(\d+)\s*/\s*(\d+)", raw)
+    prof = (100.0 * int(pm.group(1)) / int(pm.group(2))
+            if pm and int(pm.group(2)) else None)
+
+    head = re.sub(r"<[^>]+>", " ", body[:12000])
+    d = re.search(r"(\d{4}-\d{2}-\d{2})", head)
+    t = re.search(r"\d{4}-\d{2}-\d{2}\s+(\d{2}:\d{2})", head)
+    intraday = "盘中实时" in head[:6000] or bool(intr)
+    sm = re.search(r"数据来源[：:]\s*([^　|<\n（(]{2,24})", head)
+    source = sm.group(1).strip() if sm else "公开行情接口"
+    status = ("<div class='statusbar'><b>{}</b><span>{}</span>"
+              "<span class='badge{}'>{}</span><span>{}</span></div>").format(
+                  d.group(1) if d else "", t.group(1) if t else "",
+                  " warn" if intraday else "",
+                  "盘中 · 未收盘" if intraday else "收盘 · 终值", source)
+
+    def kpi_ring(label, value, pct, color):
+        p = max(0.0, min(100.0, pct or 0.0))
+        return ("<div class='kpi'><div class='ring' style='background:"
+                "conic-gradient({c} 0 {p:.1f}%,#edf1f6 {p:.1f}% 100%)'></div>"
+                "<div><b>{v}</b><span>{l}</span></div></div>").format(
+                    c=color, p=p, v=value, l=label)
+
+    def kpi_bar(label, value, frac, note, color):
+        w = max(3.0, min(100.0, abs(frac or 0.0)))
+        return ("<div class='kpi'><div class='kbox'><b>{v}</b><span>{l}</span>"
+                "<div class='kbar'><i style='width:{w:.1f}%;background:{c}'></i>"
+                "</div><em>{n}</em></div></div>").format(
+                    v=value, l=label, w=w, c=color, n=note)
+
+    kpis = ""
+    if ratio is not None:
+        kpis += kpi_ring("上涨占比", "{:.0f}%".format(ratio), ratio, "#e05a4f")
+    if amount is not None:
+        kpis += kpi_bar("成交额·亿", "{:,.0f}".format(amount),
+                        abs(chg) * 3 if chg is not None else 60,
+                        "较昨同时点 {:+.2f}%".format(chg)
+                        if chg is not None else "盘中累计", "#3b7dd8")
+    if net is not None:
+        kpis += kpi_bar("板块净额·亿", "{:+.0f}".format(net), abs(net) / 6,
+                        "行业合计", "#2e9e7b" if net < 0 else "#e05a4f")
+    if lu is not None and ld is not None:
+        kpis += kpi_bar("涨停 / 跌停", "{:.0f} / {:.0f}".format(lu, ld),
+                        100.0 * lu / max(1.0, lu + ld), "全市场", "#e05a4f")
+    if quality is not None:
+        kpis += kpi_ring("数据质量", "{:.0f}%".format(quality),
+                         quality, "#3b7dd8")
+    if prof is not None:
+        kpis += kpi_ring("自建画像", "{:.0f}%".format(prof), prof, "#f0a04b")
+
+    def card(title, inner):
+        return ("<section class='card'><h4>{}</h4>"
+                "<div class='chart'>{}</div></section>").format(title, inner)
+
+    cards = []
+    idx = [(r[0], _viz_num(r[2])) for r in _viz_rows(body, "1.1 指数概览")[1:]
+           if len(r) > 2]
+    idx = [(a, v) for a, v in idx if v is not None]
+    if idx:
+        mx = max(abs(v) for _, v in idx) or 1.0
+        bars = []
+        for lab, v in idx:
+            w = 50.0 * abs(v) / mx
+            bar = ("<i class='pos' style='left:50%;width:{:.1f}%'></i>".format(w)
+                   if v >= 0 else
+                   "<i class='neg' style='right:50%;width:{:.1f}%'></i>".format(w))
+            bars.append("<div class='hb' title='{}: {:+.2f}'><span>{}</span>"
+                        "<div class='hb-track'>{}</div><b>{:+.2f}</b></div>"
+                        .format(lab, v, lab, bar, v))
+        cards.append(card("指数涨跌幅（%）", "".join(bars)))
+
+    stack = ""
+    if up_n and dn_n and up_n + dn_n > 0:
+        pu = 100.0 * up_n / (up_n + dn_n)
+        stack += ("<div class='stack'><i style='width:{:.1f}%;background:#e05a4f'>"
+                  "</i><i style='width:{:.1f}%;background:#2e9e7b'></i></div>"
+                  "<div class='slegend'><span>上涨 <b>{:,.0f}</b></span>"
+                  "<span>下跌 <b>{:,.0f}</b></span></div>").format(
+                      pu, 100 - pu, up_n, dn_n)
+    if lu is not None and ld is not None and lu + ld > 0:
+        pl = 100.0 * lu / (lu + ld)
+        stack += ("<div class='stack'><i style='width:{:.1f}%;background:#e05a4f'>"
+                  "</i><i style='width:{:.1f}%;background:#2e9e7b'></i></div>"
+                  "<div class='slegend'><span>涨停 <b>{:.0f}</b></span>"
+                  "<span>跌停 <b>{:.0f}</b></span></div>").format(
+                      pl, 100 - pl, lu, ld)
+    if stack:
+        cards.append(card("涨跌结构", stack))
+
+    # 只保留全市场口径的结果图；带「样本」的池内图表一律不进看板
+    keep = (("全市场涨跌幅区间分布", "涨跌分布"),
+            ("日内全市场上涨家数占比演变", "日内广度"),
+            ("两市成交额趋势", "成交额趋势"),
+            ("上证指数日内分时", "指数分时"),
+            ("行业主力净流入", "行业流入 Top"),
+            ("行业主力净流出", "行业流出 Top"),
+            ("A股主要指数 PE", "指数 PE"))
+    found = {}
+    for s in re.findall(r"<svg\b.*?</svg>", body, re.S):
+        tm = re.search(r'<text[^>]*font-weight="600"[^>]*>(.*?)</text>', s, re.S)
+        title = tm.group(1) if tm else ""
+        if "样本" in title:
+            continue
+        for key, short in keep:
+            if key in title and key not in found:
+                found[key] = card(short, s)
+    for key, _ in keep:
+        if key in found:
+            cards.append(found[key])
+
+    verdict = _verdict_html(_verdict_text(concl.group(0)))
+    viz = ("<!--viz-start--><h1>ETF 全景 · 结果看板</h1>" + verdict + status +
+           "<div class='kpis'>" + kpis + "</div>" +
+           "<div class='dash'>" + "".join(cards) + "</div><!--viz-end-->")
+
+    # 邮件正文锚点：只留要点、结论首句、执行摘要表，页面不渲染
+    ctxt = re.sub(r"<[^>]+>", "", concl.group(0))
+    lead = ctxt.split("。")[0] + "。" if "。" in ctxt else ctxt[:90]
+    lead = re.sub(r"^一句话结论[：:]?\s*", "", lead)
+    anchors = (pts.group(0) +
+               "<blockquote><strong>一句话结论</strong>：{}</blockquote>".format(
+                   esc(lead)) +
+               "<h2 id='s1'>执行摘要</h2>" + summ.group(1) +
+               (intr.group(0) if intr else ""))
+    hidden = "<div class='srcdata' hidden>" + anchors + "<hr/></div>"
+
+    out = (html[:mb.start(2)] + viz + "\n" + hidden + VIZ_JS +
+           html[mb.end(2):])
+    out = re.sub(r"<style[^>]*>.*?</style>", "", out, flags=re.S)
+    out = re.sub(r"<title>.*?</title>", "<title>ETF 结果看板</title>", out,
+                 flags=re.S)
+    return out.replace("</head>", "<style>" + VIZ_CSS + "</style></head>", 1)
+
+
 def md_to_html(md, title="ETF 全景分析报告"):
     """极简 Markdown→HTML：标题/表格/列表/引用/粗体/分隔线/图片内联。"""
     lines = inline_svg(md).split("\n")
@@ -6648,7 +6969,7 @@ def md_to_html(md, title="ETF 全景分析报告"):
            "th,td{border:1px solid #e3e8ef;padding:6px 8px;text-align:left;white-space:nowrap}"
            "th{background:#f4f7fb;cursor:pointer;user-select:none}"
            "th:hover{background:#e8f0fb}"
-           "th.s-asc::after{content:' \25B2'}th.s-desc::after{content:' \25BC'}"
+           "th.s-asc::after{content:' ▲'}th.s-desc::after{content:' ▼'}"
            # 对齐以表格分隔行的冒号为准（:--: 居中、--: 右对齐），
            # 表头与数据同列同规则；只有未标注的列才退回「像数字就右对齐」的启发式，
            # 否则同一列里「—」右对齐、「+3.00pct」左对齐，看起来就是错位。
@@ -6667,6 +6988,39 @@ def md_to_html(md, title="ETF 全景分析报告"):
            "#totop{position:fixed;right:18px;bottom:18px;width:40px;height:40px;"
            "border:0;border-radius:50%;background:#3b7dd8;color:#fff;font-size:18px;"
            "cursor:pointer;opacity:.85}#totop:hover{opacity:1}")
+    css += (
+        ".statusbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;"
+        "margin:12px 0 10px;font-size:13px;color:#4a5a70}"
+        ".statusbar b{font-size:15px;color:#1d3f66}"
+        ".badge{display:inline-block;padding:2px 9px;border-radius:999px;"
+        "background:#e8f1ff;color:#25599b;font-size:12px;font-weight:600}"
+        ".badge.warn{background:#fff3e0;color:#9a5b00}"
+        ".dash{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));"
+        "gap:12px;margin:14px 0 26px}"
+        ".card{background:#fff;border:1px solid #e3e9f2;border-radius:10px;"
+        "padding:14px 16px;box-shadow:0 1px 3px rgba(30,60,100,.06)}"
+        ".card.full{grid-column:1/-1}"
+        ".card h3{margin:0 0 10px;padding:0;border:0;font-size:15px;color:#1a4d8f}"
+        ".card h2{margin:0 0 8px;font-size:16px}"
+        ".card .tw{margin:0;border:0}"
+        ".card table{font-size:12.5px}"
+        ".points p.li{margin:5px 0;padding:6px 10px;background:#f7f9fc;"
+        "border-radius:6px;font-size:13px}"
+        ".points p:first-child{display:none}"
+        ".kpis{display:flex;gap:10px;flex-wrap:wrap;margin:10px 0 6px}"
+        ".kpi{flex:1;min-width:92px;background:#f7f9fc;border-radius:8px;padding:9px}"
+        ".kpi span{display:block;font-size:12px;color:#6b7684}"
+        ".kpi b{display:block;font-size:20px;color:#25476b;line-height:1.3}"
+        ".hint{margin:6px 0 0!important;font-size:12px!important;color:#6b7684}"
+        ".concl{background:#f2f7ff;border-left:3px solid #3b7dd8;border-radius:6px;"
+        "padding:10px 14px;font-size:13px;color:#2c3e50}"
+        ".concl summary{cursor:pointer;font-weight:600}"
+        ".concl blockquote{margin:10px 0 0;background:transparent;border:0;padding:0}"
+        "details.meta,details.tocbox{margin:8px 0 14px;font-size:13px;color:#6b7684}"
+        "details.meta summary,details.tocbox summary{cursor:pointer;color:#1a4d8f}"
+        "details.meta p{font-size:12.5px}"
+        "@media(max-width:720px){.dash{grid-template-columns:1fr}}"
+    )
     js = ("<button id='totop' title='回到顶部'>&uarr;</button><script>"
           "document.getElementById('totop').onclick=function(){"
           "window.scrollTo({top:0,behavior:'smooth'})};"
@@ -6687,10 +7041,12 @@ def md_to_html(md, title="ETF 全景分析报告"):
           "return dir==='asc'?x-y:y-x;});"
           "rows.forEach(function(r){tb.appendChild(r)});};});});"
           "</script>")
-    return ("<!doctype html><html lang='zh-CN'><head><meta charset='utf-8'>"
+    page = ("<!doctype html><html lang='zh-CN'><head><meta charset='utf-8'>"
             "<meta name='viewport' content='width=device-width,initial-scale=1'>"
+            "<link rel='icon' href='data:,'>"   # 阻止浏览器请求 /favicon.ico（线上 404）
             "<title>{}</title><style>{}</style></head><body>{}{}</body></html>".format(
                 esc(title), css, "\n".join(out), js))
+    return polish_dashboard(page)
 
 
 def _limit_threshold(code):
@@ -7683,6 +8039,14 @@ def render(today, market, fund, outlook, store, source_note,
         add("### 4.3 行业主力净流出 Top{}".format(len(fund["out_top"])))
         add("")
         board_table(fund["out_top"], "净流出居前板块（负值越大，流出越多）")
+        if fund["out_top"]:
+            chart = save_chart("fundflow_out",
+                               svg_bars([r["name"][:5] for r in fund["out_top"]],
+                                        [r["net_yi"] for r in fund["out_top"]],
+                                        "行业主力净流出 Top（亿元）", fmt="{:+.0f}"))
+            if chart:
+                add("![行业主力净流出]({})".format(chart))
+                add("")
 
         add("### 4.4 概念板块资金聚焦")
         add("")
@@ -8253,17 +8617,20 @@ def render(today, market, fund, outlook, store, source_note,
     add("")
     add("> 覆盖 vs upsert 的区别是刻意的：快照是「某一天的截面」，重跑应整段替换；"
         "份额和快讯是「跨日累积的流水」，今天的运行不该把昨天的记录删掉。"
-        "JSON 里那些整句文字（如融资余额点评）不进数值列，避免表里一排 NULL，"
+        "真源库快照里那些整句文字（如融资余额点评）不进数值列，避免表里一排 NULL，"
         "而是单独进 `breadth_note`，一条 SQL 就能读；"
         "`_lhb` 的榜单是无表头数组（`['sh603236','移远通信','3',4,…]`），"
         "只把能确定语义的 code/名称/买入额/涨跌幅取出，其余列连原始行存 `raw`，"
-        "不猜 schema。至此 `etf_snapshot.json` 的**每一个子键**都能在库里查到"
-        "对应行，分时序列按点拆行，采集元信息（`*_status` / `*_n`）进 `ext_meta`。")
+        "不猜 schema。至此 `etf_store.sqlite` 的 `snapshot_store` 快照"
+        "**每一个子键**都镜像进派生库，分时序列按点拆行，"
+        "采集元信息（`*_status` / `*_n`）进 `ext_meta`。")
     add("")
-    add("> **时点差异**：镜像的截面数据取自 `etf_snapshot.json`，而快照只在 "
-        "`--save-snapshot` 时刷新，因此 `snapshot_meta.updated` 记录的是**快照文件时间**，"
-        "可能早于本次在线报告数小时。要两端一致，跑完后再执行一次 "
-        "`--save-snapshot` 重建快照与镜像。")
+    add("> **时点说明**：派生索引 `etf_data.sqlite` 的截面表，由**历史真源库** "
+        "`etf_store.sqlite` 的 `snapshot_store` 最新一份快照整段镜像而来；"
+        "`snapshot_meta.updated` 取自真源库的写入时刻（在线运行带 "
+        "`--save-snapshot` 时刷新），不再是某个 JSON 文件的修改时间。"
+        "在线运行时真源库与派生镜像同批更新，两端一致；离线运行时截面停在"
+        "快照日，跨日结论请以第十二章的逐日累积为准。")
     add("")
     add("```")
     add('python etf_analysis.py --sql "SELECT date, amount, amount_chg, up_ratio '
@@ -8286,7 +8653,7 @@ def render(today, market, fund, outlook, store, source_note,
     add("")
     add("> ⚠️ 项为降级/提示项，不影响报告生成，但相关结论需打折看待。"
         "本报告所有外部端点均为公开 HTTP 接口，无 SLA、字段可能变更；"
-        "离线快照是单日静态，跨日需重新在线取数或用第十二章的逐日累积。")
+        "离线快照是静态截面，跨日需重新在线取数或用第十二章的逐日累积。")
     add("")
 
     add("---")
@@ -9881,8 +10248,15 @@ def import_json_tables(con, report_date, updated=""):
             v = _dig(bd, sec, key)
             if v is None or isinstance(v, (dict, list)):
                 continue
+            # 北向逐日净买入已停止披露：接口给的 0 是「无数据」而非真实零值，
+            # 不写进派生库，避免 --sql 里被当成有效指标参与计算。
+            if name == "north_net_in" and not num(v):
+                continue
             brows.append((snap_date, name, num(v), str(v)[:120]))
         if brows:
+            # 迁移前把「无数据」的 0 写成过有效指标，历史行也一并清掉
+            con.execute("DELETE FROM breadth_metric WHERE name='north_net_in' "
+                        "AND value=0")
             con.executemany("INSERT OR REPLACE INTO breadth_metric VALUES "
                             "(?,?,?,?)", brows)
 
