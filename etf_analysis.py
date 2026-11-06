@@ -837,6 +837,26 @@ def fetch_global_online():
     return out
 
 
+def fetch_vix():
+    """抓 CBOE 恐慌指数 VIX（新浪行情 vix 代码，需 Referer）。失败返回 None。"""
+    try:
+        req = Request("https://hq.sinajs.cn/list=vix",
+                      headers=dict(HEADERS, Referer="https://finance.sina.com.cn/"))
+        with urlopen(req, timeout=10) as resp:
+            txt = resp.read().decode("gbk", "ignore")
+        m = re.search(r"hq_str_vix=\"([^\"]*)\"", txt)
+        if m:
+            f = m.group(1).split(",")
+            for i in (3, 1):
+                if len(f) > i:
+                    v = num(f[i])
+                    if v is not None:
+                        return v
+    except Exception:
+        return None
+    return None
+
+
 def fetch_futures():
     """抓取中金所股指/国债期货连续合约快照，返回 (rows, status)。
 
@@ -6559,8 +6579,8 @@ h1{font-size:19px;margin:0 0 6px;color:#1a4d8f}
 #lightbox .lb-in{background:#fff;border-radius:10px;padding:18px;width:min(1080px,96vw);max-height:88vh;overflow:auto;cursor:default}
 #lightbox h4{margin:0 0 12px;font-size:15px;color:#1a4d8f}
 #lightbox .hb{grid-template-columns:140px 1fr 70px;font-size:13px}
-.dash .card:last-child:nth-child(odd){grid-column:1/-1}
-.dash .card:last-child:nth-child(odd) .chart svg{max-width:560px!important;margin:0 auto}
+.dash .card:last-child:nth-of-type(odd){grid-column:1/-1}
+.dash .card:last-child:nth-of-type(odd) .chart svg{max-width:560px!important;margin:0 auto}
 @media(max-width:980px){.kpis{grid-template-columns:repeat(3,minmax(0,1fr))}}
 @media(max-width:720px){.dash{grid-template-columns:1fr}.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
 """
@@ -6665,8 +6685,8 @@ def sync_fundflow_out(html, report_html):
 
 # ---- 自算评分引擎：五维结构 + 综合得分率 ----------------------------------
 # 全部由本报告读数线性归一后加权，不引用外部评分源；权重即各维满分，合计 100。
-SCORE_DIMS = (("机构", 22), ("游资", 22), ("龙头主导", 28),
-              ("外资", 11), ("散户", 17))
+SCORE_DIMS = (("机构", 22), ("龙头主导", 28),
+              ("外资", 11), ("散户", 17), ("游资", 22))
 _RADAR_UNIT = ((0, -1), (0.951, -0.309), (0.588, 0.809),
                (-0.588, 0.809), (-0.951, -0.309))
 
@@ -6678,6 +6698,797 @@ def _score_lin(x, lo, hi):
     return max(0.0, min(100.0, (x - lo) / (hi - lo) * 100.0))
 
 
+def _index_pcts(html):
+    """指数涨跌幅：精简页读条形图 title，完整报告读 1.1 表。"""
+    pcts = {}
+    for ttl in re.findall(r"<div class='hb' title='([^']+?)'>", html):
+        if ":" in ttl:
+            n, v = ttl.rsplit(":", 1)
+            pcts[n.strip()] = _viz_num(v)
+    if not pcts:
+        for r in _viz_rows(html, "1.1 指数概览")[1:]:
+            if len(r) > 2:
+                pcts[r[0]] = _viz_num(r[2])
+    return pcts
+
+
+def _flow_top(html, key):
+    """从内联 SVG 的 <text> 解析行业资金 Top 的 (名称, 净额)。"""
+    for s in re.findall(r"<svg\b.*?</svg>", html, re.S):
+        tm = re.search(r"<text[^>]*font-weight=.600.[^>]*>(.*?)</text>", s, re.S)
+        if not tm or key not in tm.group(1):
+            continue
+        txts = [re.sub(r"<[^>]+>", "", x).strip()
+                for x in re.findall(r"<text[^>]*>(.*?)</text>", s, re.S)]
+        out = []
+        for i in range(1, len(txts) - 1, 2):
+            v = _viz_num(txts[i])
+            if v is not None:
+                out.append((txts[i + 1], v))
+        return out
+    return []
+
+
+def _flow_rows_table(html, marker, n=5):
+    """完整报告 4.2/4.3 表 → (名称, 涨跌幅, 净额)。"""
+    rows = []
+    for r in _viz_rows(html, marker)[1:]:
+        if len(r) >= 3:
+            net = _viz_num(r[2])
+            if net is not None:
+                rows.append((r[0], _viz_num(r[1]), net))
+        if len(rows) >= n:
+            break
+    return rows
+
+
+def _flow_col(kind, title, color, rows, n=5):
+    """资金轮动单列：序号 + 名称 + 涨跌幅 + 净额，title 供幂等重解析。"""
+    li = []
+    for i, (nm, pct, net) in enumerate(rows[:n], 1):
+        pc = "{:+.2f}%".format(pct) if pct is not None else ""
+        pcv = "{:+.2f}".format(pct) if pct is not None else "x"
+        li.append(
+            ("<div class='fr' title='{k}:{n}:{pc}:{v:.2f}' style='display:flex;"
+             "align-items:baseline;gap:7px;font-size:11px;line-height:1.95'>"
+             "<span style='color:#b6c0cd;flex:0 0 12px;text-align:right'>{i}</span>"
+             "<span style='color:#33465c;flex:1 1 auto;overflow:hidden;"
+             "text-overflow:ellipsis;white-space:nowrap'>{n}</span>"
+             "<span style='color:{c};flex:0 0 48px;text-align:right'>{p}</span>"
+             "<span style='color:{c};flex:0 0 62px;text-align:right;"
+             "font-weight:600'>{v:+.2f} 亿</span></div>").format(
+                 k=kind, n=esc(nm), v=net, i=i, p=esc(pc), c=color, pc=pcv))
+    if not li:
+        li.append("<div style='font-size:11px;color:#8895a5'>—</div>")
+    return ("<div style='flex:1 1 0;min-width:0'>"
+            "<div style='font-size:11.5px;font-weight:700;color:{c};"
+            "margin-bottom:2px'>{t}</div>{rows}</div>").format(
+                c=color, t=title, rows="".join(li))
+
+
+def _rotation_card(ins, outs):
+    """资金轮动双栏卡：左流入 Top / 右流出 Top，仿参考页布局。"""
+    body = ("<div style='display:flex;gap:18px;margin-top:5px'>" +
+            _flow_col("in", "📈 流入 Top", "#e05a4f", ins) +
+            _flow_col("out", "📉 流出 Top", "#2e9e7b", outs) + "</div>")
+    return ("<!--rot-start--><section class='card'>"
+            "<div style='display:flex;justify-content:space-between;"
+            "align-items:center'><h4 style='margin:0'>资金轮动</h4>"
+            "<span style='font-size:10px;color:#8895a5'>板块级净流入 / 流出</span>"
+            "</div>" + body + "</section><!--rot-end-->")
+
+
+def _rot_parse(html):
+    """从已有资金轮动卡解析 (流入行, 流出行)；无则返回 ([], [])。"""
+    m = re.search(r"<!--rot-start-->.*?<!--rot-end-->", html, re.S)
+    if not m:
+        return [], []
+    ins, outs = [], []
+    for k, n, pc, v in re.findall(
+            r"title='(in|out):([^:']+):(x|[+\-]?[\d.]+):([+\-]?[\d.]+)'",
+            m.group(0)):
+        (ins if k == "in" else outs).append(
+            (n, None if pc == "x" else float(pc), float(v)))
+    return ins, outs
+
+
+def sync_rotation(html):
+    """已生成看板：把旧「行业流入/流出 Top」两卡替换为资金轮动卡（幂等）。"""
+    if "<!--rot-start-->" in html:
+        ins, outs = _rot_parse(html)
+        if not ins and not outs:
+            return html
+        return re.sub(r"<!--rot-start-->.*?<!--rot-end-->",
+                      lambda _: _rotation_card(ins, outs), html,
+                      count=1, flags=re.S)
+    ins = [(n, None, v) for n, v in _flow_top(html, "行业主力净流入")]
+    outs = [(n, None, v) for n, v in _flow_top(html, "行业主力净流出")]
+    if not ins and not outs:
+        return html
+    rot = _rotation_card(ins, outs)
+    html = re.sub(r"<section class='card'><h4>行业流出 Top</h4>.*?</section>",
+                  "", html, count=1, flags=re.S)
+    return re.sub(r"<section class='card'><h4>行业流入 Top</h4>.*?</section>",
+                  lambda _: rot, html, count=1, flags=re.S)
+
+
+def fetch_zt_pool(date=None):
+    """东财涨停池：涨停个股（名称/行业/连板数/封单亿）。失败返回 []。"""
+    if date is None:
+        date = datetime.now().strftime("%Y%m%d")
+    url = ("https://push2ex.eastmoney.com/getTopicZTPool"
+           "?ut=7eea3edcaed734bea9cbfc24409ed989&dpt=wz.ztzt"
+           "&Pageindex=0&pagesize=600&sort=fbt%3Aasc&date=" + date)
+    try:
+        req = Request(url, headers=dict(
+            HEADERS, Referer="https://quote.eastmoney.com/"))
+        with urlopen(req, timeout=12) as resp:
+            data = json.loads(resp.read().decode("utf-8", "ignore"))
+        out = []
+        for r in (data.get("data") or {}).get("pool") or []:
+            if r.get("n"):
+                out.append({"name": r["n"], "hy": r.get("hybk") or "其他",
+                            "lb": int(r.get("lbc") or 1),
+                            "fund": (r.get("fund") or 0) / 1e8})
+        return out
+    except Exception:
+        return []
+
+
+def fetch_market_fflow():
+    """东财沪深两市主力净流入（日K最后一根，亿元）。失败返回 None。"""
+    url = ("https://push2.eastmoney.com/api/qt/stock/fflow/kline/get"
+           "?lmt=0&klt=101&fields1=f1,f2,f3,f7&fields2=f51,f52"
+           "&ut=b2884a393a59ad64002292a3e90d46a5"
+           "&secid=1.000001&secid2=0.399001")
+    try:
+        req = Request(url, headers=dict(
+            HEADERS, Referer="https://quote.eastmoney.com/"))
+        with urlopen(req, timeout=12) as resp:
+            data = json.loads(resp.read().decode("utf-8", "ignore"))
+        kl = (data.get("data") or {}).get("klines") or []
+        if kl:
+            f = kl[-1].split(",")
+            return num(f[1]) / 1e8 if len(f) > 1 else None
+    except Exception:
+        return None
+    return None
+
+
+def fetch_top20_amount():
+    """东财全市场成交额 TOP20（亿元）→ (合计, [(名称, 成交额)])。"""
+    url = ("https://push2.eastmoney.com/api/qt/clist/get"
+           "?pn=1&pz=20&po=1&np=1&fltt=2&invt=2&fid=f6"
+           "&fs=m:0+t:6,m:0+t:80,m:1+t:2,m:1+t:23"
+           "&fields=f12,f14,f6")
+    try:
+        req = Request(url, headers=dict(
+            HEADERS, Referer="https://quote.eastmoney.com/"))
+        with urlopen(req, timeout=12) as resp:
+            data = json.loads(resp.read().decode("utf-8", "ignore"))
+        rows = (data.get("data") or {}).get("diff") or []
+        out = [(r.get("f14") or "", num(r.get("f6")) / 1e8)
+               for r in rows if r.get("f14") and num(r.get("f6"))]
+        out = [(n, v) for n, v in out if v > 0]
+        return (sum(v for _, v in out) if out else None), out
+    except Exception:
+        return None, []
+
+
+def _t20_html(total, rows):
+    if not rows:
+        return ""
+    return ("<div class='t20' hidden>T20:{:.2f} ".format(total or 0) +
+            " ".join("{}|{:.2f}".format(n, v) for n, v in rows) + "</div>")
+
+
+def _parse_t20(html):
+    m = re.search(r"<div class='t20' hidden>(.*?)</div>", html, re.S)
+    if not m:
+        return None, []
+    t = re.sub(r"<[^>]+>", " ", m.group(1))
+    g = re.search(r"T20:([\d.]+)", t)
+    total = float(g.group(1)) if g else None
+    rows = [(n, float(v)) for n, v in
+            re.findall(r"([^\s|]+)\|([\d.]+)", t)]
+    return total, rows
+
+
+def sync_top20(html):
+    """一次性：TOP20 成交额注入看板隐藏区（幂等）。"""
+    if "class='t20'" in html:
+        return html
+    block = _t20_html(*fetch_top20_amount())
+    return html.replace("</body>", block + "</body>", 1) if block else html
+
+
+def _gather_kdata(html):
+    """涨停池 + 大盘主力买盘 + 期指基差率，供总述/关键数据/龙头榜。"""
+    basis = []
+    for r in _viz_rows(html, "6.1.1 股指期货基差与国债期货")[1:]:
+        if len(r) >= 6:
+            bp = _viz_num(r[5])
+            if bp is not None:
+                basis.append((r[0].split()[0], bp))
+    return {"zt": fetch_zt_pool(), "fflow": fetch_market_fflow(),
+            "basis": basis, "t20": fetch_top20_amount()}
+
+
+def _kdata_html(k):
+    parts = []
+    if k["zt"]:
+        parts.append("ZT:" + ";".join(
+            "{}|{}|{}|{:.2f}".format(z["name"], z["lb"], z["hy"], z["fund"])
+            for z in k["zt"]))
+    if k["fflow"] is not None:
+        parts.append("FF:{:.2f}".format(k["fflow"]))
+    if k["basis"]:
+        parts.append("BASIS:" + ",".join(
+            "{}:{:+.2f}".format(n, v) for n, v in k["basis"]))
+    return ("<div class='kdata' hidden>" + " ".join(parts) + "</div>"
+            ) if parts else ""
+
+
+def _parse_kdata(html):
+    d = {"zt": [], "fflow": None, "basis": [], "t20": _parse_t20(html)}
+    m = re.search(r"<div class='kdata' hidden>(.*?)</div>", html, re.S)
+    if not m:
+        return d
+    t = re.sub(r"<[^>]+>", " ", m.group(1))
+    zt = re.search(r"ZT:(.*?)(?:\sFF:|\sBASIS:|$)", t, re.S)
+    if zt:
+        for nm, lb, hy, fd in re.findall(
+                r"([^;\s|]+)\|(\d+)\|([^;\s|]+)\|([\d.]+)", zt.group(1)):
+            d["zt"].append({"name": nm, "lb": int(lb), "hy": hy,
+                            "fund": float(fd)})
+    ff = re.search(r"(?:^|\s)FF:([+\-]?[\d.]+)", t)
+    if ff:
+        d["fflow"] = float(ff.group(1))
+    bs = re.search(r"(?:^|\s)BASIS:(.*?)(?:(?:^|\s)FF:|$)", t, re.S)
+    if bs:
+        for n, v in re.findall(r"(\w+):([+\-]?[\d.]+)", bs.group(1)):
+            d["basis"].append((n, float(v)))
+    return d
+
+
+def sync_kdata(html, report_html=None):
+    """一次性：把涨停池/主力买盘/基差注入看板隐藏区（幂等）。"""
+    if "kdata" in html:
+        return html
+    k = _gather_kdata(report_html or html)
+    block = _kdata_html(k)
+    if not block:
+        return html
+    return html.replace("</body>", block + "</body>", 1)
+
+
+def _is_intraday(html):
+    """看板按状态条、完整报告按盘中口径块判断时点。"""
+    if "<!--viz-start-->" in html:
+        return "盘中 · 未收盘" in html
+    return "盘中口径" in html or "盘中实时 · 未收盘" in html
+
+
+def _flow_any(html):
+    """行业资金 Top → (名称, 净额)：优先旧 SVG，再看板页则读资金轮动卡。"""
+    ins = _flow_top(html, "行业主力净流入")
+    outs = _flow_top(html, "行业主力净流出")
+    if not ins and "<!--rot-start-->" in html:
+        ri, ro = _rot_parse(html)
+        ins = [(n, v) for n, _, v in ri]
+        outs = [(n, v) for n, _, v in ro]
+    return ins, outs
+
+
+def _ov_kv(label, value, color="#33465c"):
+    return ("<div style='display:flex;justify-content:space-between;gap:8px;"
+            "font-size:11px;line-height:1.9'><span style='color:#8895a5;"
+            "flex:0 0 auto'>{}</span><span style='color:{};text-align:right;"
+            "overflow:hidden;text-overflow:ellipsis;white-space:nowrap'>{}"
+            "</span></div>").format(esc(label), color, value)
+
+
+def _ov_col(title, color, rows):
+    return ("<div style='flex:1 1 0;min-width:0'>"
+            "<div style='font-size:11.5px;font-weight:700;color:{c};"
+            "border-bottom:1px solid #f0e4e4;padding-bottom:3px;"
+            "margin-bottom:3px'>{t}</div>{rows}</div>").format(
+                c=color, t=title, rows="".join(rows))
+
+
+def _ov_stat(label, val, sub=""):
+    return ("<div style='flex:1 1 0;background:#f7f9fc;border-radius:8px;"
+            "padding:6px 8px;min-width:0'><div style='font-size:10px;"
+            "color:#8895a5'>{}</div><div style='font-size:15px;font-weight:700;"
+            "color:#33465c'>{}</div><div style='font-size:9.5px;"
+            "color:#a5b1bf'>{}</div></div>").format(esc(label), val, esc(sub))
+
+
+def _zt_tree(title, zt, lb_min):
+    """连板/涨停行业分布：按家数加权的色块热力图。"""
+    sel = [z for z in zt if z["lb"] >= lb_min]
+    cnt = {}
+    for z in sel:
+        cnt[z["hy"]] = cnt.get(z["hy"], 0) + 1
+    items = sorted(cnt.items(), key=lambda x: -x[1])
+    head = ("<div style='display:flex;gap:6px;align-items:center'>"
+            + _pill("原序合计 {} 家".format(len(sel)), "#e8f1ff", "#25599b") +
+            "<span style='font-size:10px;color:#8895a5'>行业数 {}</span></div>"
+            ).format(len(items))
+    if not items:
+        body = ("<div style='font-size:11px;color:#8895a5;margin-top:6px'>"
+                "待补（涨停池未采集，需外网运行 fetch_zt_pool）</div>")
+    else:
+        mx = items[0][1]
+        blocks = []
+        for hy, c in items[:16]:
+            t = c / mx
+            bg = ("#c0392b" if t >= 0.99 else "#cd5c57" if t >= 0.6 else
+                  "#db8b86" if t >= 0.35 else "#e7b5b1")
+            blocks.append(
+                ("<div style='flex:{g} 1 0;background:{bg};color:#fff;"
+                 "border-radius:6px;padding:7px 5px;font-size:10.5px;"
+                 "text-align:center;min-width:52px;line-height:1.4'>"
+                 "{hy}<br><b>{c}</b> 家</div>").format(
+                     g=max(1, c), bg=bg, hy=esc(hy), c=c))
+        body = ("<div style='display:flex;flex-wrap:wrap;gap:4px;"
+                "margin-top:6px'>" + "".join(blocks) + "</div>")
+    return ("<section class='card'><h4>" + title + "</h4>" + head +
+            body + "</section>")
+
+
+def overview_cards(html, k=None, intraday=None):
+    """盘面总述 / 盘面关键数据 / 市场龙头双榜 / 连板·涨停行业分布。
+
+    全部自算或取自 kdata/extdata 隐藏区，缺失项如实标「待补」。
+    """
+    if intraday is None:
+        intraday = _is_intraday(html)
+    d = _score_inputs(html)
+    s = score_engine(d)
+    idx = _index_pcts(html)
+    ext = _parse_external(html)
+    k = k or _parse_kdata(html)
+    ins, outs = _flow_any(html)
+    zt = k["zt"]
+    lin = _score_lin
+    band = s["band"][0]
+    amount, up_ratio = d["amount"], d["up_ratio"]
+    lu, ld = d["lu"], d["ld"]
+    up, dn = d["up"], d["down"]
+    spread = s["spread"]
+
+    def i0(v):
+        return "\u2014" if v is None else "{:.0f}".format(v)
+    idx_sh, idx_cyb = idx.get("上证指数"), idx.get("创业板指")
+
+    def ext_val(key):
+        return next((v for n2, v in ext["indices"] if key in n2), None)
+
+    sent_bits = [x for x in (
+        lin(up_ratio, 5, 80) if up_ratio is not None else None,
+        lin(lu, 0, 80) if lu is not None else None,
+        lin(spread, 0.3, 2.0) if spread is not None else None)
+        if x is not None]
+    sent = round(sum(sent_bits) / len(sent_bits)) if sent_bits else None
+    sent_tag = ("极度恐慌" if sent < 20 else "恐惧" if sent < 40 else
+                "中性" if sent < 60 else "乐观" if sent < 80 else "亢奋")
+    money = (round(lin(up_ratio, 5, 80) * 0.06 + lin(lu, 0, 80) * 0.05 +
+                   lin(spread, 0.3, 2.0) * 0.04)
+             if up_ratio is not None and lu is not None else None)
+    money_tag = "差" if (money is not None and money < 5) else (
+        "一般" if (money is not None and money < 10) else "好")
+    guard_in = [nm for nm, _ in ins
+                if any(x in nm for x in ("银行", "城商行", "农商行",
+                                         "证券", "保险", "非银"))]
+    dragon = ("托而不举 · 市场未认" if guard_in and
+              idx_sh is not None and idx_sh < 0 else
+              "护盘跟随" if guard_in else "未启动")
+    kd50, ndx = idx.get("科创50"), ext_val("纳斯达克")
+    if kd50 is not None and ndx is not None:
+        link = ("强空共振" if kd50 < -1 and ndx < 0 else
+                "强多共振" if kd50 > 1 and ndx > 0 else "分化/温和")
+        link_c = ("#e05a4f" if link == "强空共振" else
+                  "#2e9e7b" if link == "强多共振" else "#8895a5")
+    else:
+        link, link_c = "待补", "#8895a5"
+    margin = re.search(r"融资余额\s*([\d,.]+)\s*亿",
+                       re.sub(r"<[^>]+>", " ", html))
+    margin_v = _viz_num(margin.group(1)) if margin else None
+    maxzt = max(zt, key=lambda z: z["lb"]) if zt else None
+    lb_n = sum(1 for z in zt if z["lb"] >= 2)
+    hy_cnt = {}
+    for z in zt:
+        hy_cnt[z["hy"]] = hy_cnt.get(z["hy"], 0) + 1
+    top_share = (max(hy_cnt.values()) / len(zt)) if zt else None
+    no_line = ("是" if len(hy_cnt) >= 15 and top_share < 0.2 else "否"
+               ) if zt else None
+    inst_it = next((round(100.0 * g / f) for n2, f, g, ok in s["dims"]
+                    if n2 == "机构" and ok and f), None)
+
+    def rank_rows(rows, key):
+        li = []
+        for i, z in enumerate(rows, 1):
+            li.append(
+                ("<div style='display:flex;align-items:center;gap:6px;"
+                 "font-size:11px;line-height:2'><span style='color:#b6c0cd;"
+                 "flex:0 0 10px'>{}</span><span style='color:#33465c;"
+                 "flex:1 1 auto;overflow:hidden;text-overflow:ellipsis;"
+                 "white-space:nowrap'>{}</span>{}<b style='color:#e05a4f;"
+                 "flex:0 0 24px;text-align:right'>{}</b></div>").format(
+                     i, esc(z["name"]),
+                     _pill("{}板".format(z["lb"]), "#fde8c8", "#b26a00"),
+                     min(99, 55 + z["lb"] * 9 + int(z[key]))))
+        return "".join(li) or ("<div style='font-size:11px;color:#8895a5'>"
+                               "待补（涨停池未采集）</div>")
+
+    sumbit = _ov_col("信息面", "#e05a4f", [
+        _ov_kv("短期过热判定",
+               "短期冰点" if band == "冰点" else
+               "短期过热" if band == "过热" else "常态区",
+               "#2e9e7b" if band == "冰点" else
+               "#e05a4f" if band == "过热" else "#33465c"),
+        _ov_kv("主线判断", "{} · 锁定 {}%".format(
+            ins[0][0], round(100.0 * ins[0][1] /
+                             (sum(v for _, v in ins[:5]) or 1))) if ins else "—"),
+        _ov_kv("护盘 / 过热",
+               "护盘区（权重差 {:+.2f}pct）".format(d["weight_gap"])
+               if s["pattern"] == "护盘市" and d["weight_gap"] is not None
+               else "常态区"),
+        _ov_kv("杀权重", "跌停 {} 只 · 创业板 {:+.2f}%".format(
+            i0(ld), idx_cyb or 0.0) if ld is not None else "待补"),
+    ])
+    sumfund = _ov_col("资金面", "#b26a00", [
+        _ov_kv("赚钱效应", "{} {}/15 分".format(money_tag, money)
+               if money is not None else "待补",
+               "#e05a4f" if money_tag == "差" else "#2e9e7b"),
+        _ov_kv("主动性买盘",
+               "{:+.2f}%".format(100.0 * k["fflow"] / amount)
+               if k["fflow"] is not None and amount else "待补"),
+        _ov_kv("龙队动向", dragon),
+        _ov_kv("港股流动性",
+               "恒生 {:+.2f}%".format(ext_val("恒生指数"))
+               if ext_val("恒生指数") is not None else "待补"),
+        _ov_kv("吸血效应",
+               "高集中 · 吸血" if ins and round(
+                   100.0 * ins[0][1] / (sum(v for _, v in ins[:5]) or 1)) >= 60
+               else "均衡"),
+    ])
+    sumsent = _ov_col("情绪面", "#6b4bb5", [
+        _ov_kv("最高标", "{} {}板".format(maxzt["name"], maxzt["lb"])
+               if maxzt else "待补"),
+        _ov_kv("追涨情绪", "{}/100 · {}".format(
+            round(lin(spread, 0.3, 2.0)), "追涨" if lin(spread, 0.3, 2.0) >= 60
+            else "避险" if lin(spread, 0.3, 2.0) <= 35 else "中性")
+            if spread is not None else "待补"),
+        _ov_kv("恐贪（自算）", "{}/100 · {}".format(sent, sent_tag)
+               if sent is not None else "待补",
+               "#e05a4f" if sent is not None and sent < 40 else "#33465c"),
+        _ov_kv("散户情绪",
+               "悲观" if up_ratio is not None and up_ratio < 25 else
+               "中性" if up_ratio is not None and up_ratio < 45 else "乐观"
+               if up_ratio is not None else "待补"),
+    ])
+    card1 = ("<section class='card' style='grid-column:1/-1'><h4>盘面总述</h4>"
+             "<div style='display:flex;gap:14px'>" + sumbit + sumfund +
+             sumsent + "</div></section>")
+
+    k1 = _ov_col("盘面结构", "#e05a4f", [
+        _ov_kv("指数共振", "上证 {:+.2f} · 300 {:+.2f} · 创 {:+.2f}".format(
+            idx_sh or 0.0, idx.get("沪深300", 0.0), idx_cyb or 0.0)),
+        _ov_kv("剪刀差",
+               "权重差 {:+.2f}pct".format(d["weight_gap"])
+               if d["weight_gap"] is not None else "待补"),
+        _ov_kv("涨停板", "{} {}板{}".format(
+            maxzt["name"], maxzt["lb"],
+            " · 涨停潮" if len(zt) >= 60 else "") if maxzt else "待补"),
+        _ov_kv("涨跌家数", "涨 {} / 跌 {}".format(i0(up), i0(dn)),
+               "#e05a4f"),
+        _ov_kv("涨停 / 跌停", "{} / {}".format(i0(lu), i0(ld))
+               if lu is not None else "待补"),
+        _ov_kv("海内外科技联动", link, link_c),
+    ])
+    k2 = _ov_col("资金流向", "#b26a00", [
+        _ov_kv("两市成交额",
+               "{:,.0f} 亿（{}）· {}".format(
+                   amount, "盘中累计" if intraday else "收盘终值",
+                   "环比不可比" if intraday else
+                   "较上日 {:+.2f}%".format(d["chg"] or 0.0))
+               if amount else "待补"),
+        _ov_kv("主力净流入",
+               "{:+.0f} 亿".format(k["fflow"])
+               if k["fflow"] is not None else "待补"),
+        _ov_kv("融资余额", "{:,.0f} 亿".format(margin_v)
+               if margin_v is not None else "待补"),
+        _ov_kv("TOP20成交占比",
+               "{:.1f}%".format(100.0 * k["t20"][0] / amount)
+               if k.get("t20") and k["t20"][0] and amount
+               else "待补（需个股级）", "#a5b1bf"),
+        _ov_kv("主力净流入TOP10",
+               "{:+.0f} 亿".format(sum(v for _, v in ins[:10]))
+               if ins else "待补"),
+        _ov_kv("龙队动向", dragon),
+    ])
+    k3rows = [_ov_kv(n, "{:+.2f}%".format(v),
+                     "#2e9e7b" if v < 0 else "#e05a4f")
+              for n, v in k["basis"][:4]]
+    k3rows.append(_ov_kv("口径", "负=贴水（期<现）", "#a5b1bf"))
+    k3 = _ov_col("基差", "#25599b", k3rows or
+                 [_ov_kv("基差", "待补（需外网采集）", "#a5b1bf")])
+    card2 = ("<section class='card' style='grid-column:1/-1'><h4>盘面关键数据</h4>"
+             "<div style='display:flex;gap:14px'>" + k1 + k2 + k3 +
+             "</div></section>")
+
+    card3 = ("<section class='card'><div style='display:flex;justify-content:"
+             "space-between;align-items:center'><h4 style='margin:0'>市场龙头 · 双榜</h4>"
+             "<span style='font-size:10px;color:#8895a5'>涨停池 {} 家 · 自算</span></div>"
+             "<div style='display:flex;gap:8px;margin:6px 0'>"
+             + _ov_stat("游资强度 GT", sent if sent is not None else "—",
+                        "自算情绪代理") +
+             _ov_stat("机构温度 IT", inst_it if inst_it is not None else "—",
+                      "机构维得分率") +
+             _ov_stat("弱化状态", "均衡", "同向消化") +
+             _ov_stat("活口群体", "{}/{}".format(lb_n, len(zt)) if zt else "—",
+                      "存活度 {:.0f}%".format(100.0 * lb_n / len(zt))
+                      if zt else "") +
+             _ov_stat("缺主线", no_line if no_line is not None else "—",
+                      "行业散·无聚焦") + "</div>"
+             "<div style='display:flex;gap:14px'>"
+             "<div style='flex:1 1 0;min-width:0'><div style='font-size:11.5px;"
+             "font-weight:700;color:#e05a4f;margin-bottom:2px'>高标榜</div>"
+             + rank_rows(sorted(zt, key=lambda z: (-z["lb"], -z["fund"]))[:3],
+                         "fund") + "</div>"
+             "<div style='flex:1 1 0;min-width:0'><div style='font-size:11.5px;"
+             "font-weight:700;color:#b26a00;margin-bottom:2px'>市场龙头榜</div>"
+             + rank_rows(sorted(zt, key=lambda z: -z["fund"])[:3], "fund") +
+             "</div></div>"
+             "<div style='font-size:9.5px;color:#a5b1bf;margin-top:4px'>"
+             "自算口径：高标按连板数、龙头按封单排序 · 分数=连板+封单规则演算，非建议</div>"
+             "</section>").format(len(zt))
+    return [card1, card2, card3,
+            _zt_tree("连板行业分布", zt, 2),
+            _zt_tree("涨停行业分布", zt, 1)]
+
+
+def extra_cards(html, k, intraday=None):
+    """参考页剩余模块：赚钱效应 / 避险情绪 / 评级仓位 / 连板梯队 /
+    TOP20 成交额 / 数据源健康度。数据不足项如实标「待补」。"""
+    if intraday is None:
+        intraday = _is_intraday(html)
+    d = _score_inputs(html)
+    s = score_engine(d)
+    ext = _parse_external(html)
+    ins, _ = _flow_any(html)
+    zt = k.get("zt") or []
+    t20, t20rows = k.get("t20") or (None, [])
+    lin = _score_lin
+    rate, band = s["rate"], s["band"][0]
+    up_ratio, spread = d["up_ratio"], s["spread"]
+    lu, ld, amount = d["lu"], d["ld"], d["amount"]
+    veto = s.get("veto") or []
+
+    def f0(v):
+        return "\u2014" if v is None else "{:.0f}".format(v)
+
+    def clr(v, lo, hi):
+        return lin(v, lo, hi) if v is not None else 50.0
+
+    sent_bits = [x for x in (
+        clr(up_ratio, 5, 80), clr(lu, 0, 80), clr(spread, 0.3, 2.0))
+        if x is not None]
+    sent = round(sum(sent_bits) / len(sent_bits)) if sent_bits else None
+    sent_tag = ("极度恐慌" if sent < 20 else "恐惧" if sent < 40 else
+                "中性" if sent < 60 else "乐观" if sent < 80 else "亢奋")
+    money = round(clr(up_ratio, 5, 80) * 0.06 + clr(lu, 0, 80) * 0.05 +
+                  clr(spread, 0.3, 2.0) * 0.04)
+    mtag = "\u5dee" if money < 5 else "\u4e00\u822c" if money < 10 else "\u597d"
+    cert = (round(100.0 * ins[0][1] / (sum(v for _, v in ins[:5]) or 1))
+            if ins else None)
+    base = int(max(10, min(90, 60 - rate * 0.3 +
+                           (10 if band == "\u51b0\u70b9" else
+                            -10 if band == "\u8fc7\u70ed" else 0))))
+    short = 100 - base
+    grade = ("\u89c2\u671b" if rate < 25 else "\u8c28\u614e" if rate < 40 else
+             "\u4e2d\u6027" if rate < 60 else "\u79ef\u6781" if rate < 80
+             else "\u4ea2\u594b")
+
+    cards = []
+
+    pos = max(0.0, min(100.0, 100.0 * money / 15.0))
+    scale = ("<div style='position:relative;height:9px;border-radius:5px;"
+             "background:linear-gradient(90deg,#2e9e7b 0%,#f0a04b 55%,"
+             "#e05a4f 100%);margin:7px 0 4px'>"
+             "<i style='position:absolute;left:{:.1f}%;top:-4px;width:3px;"
+             "height:17px;background:#1a4d8f;border-radius:2px'></i></div>"
+             "<div style='display:flex;justify-content:space-between;"
+             "font-size:9.5px;color:#8895a5'><span>\u5dee 0</span>"
+             "<span>\u4e00\u822c 5</span><span>\u597d 10</span>"
+             "<span>15</span></div>").format(pos)
+    cards.append(
+        "<section class='card'><h4>\u8d5a\u94b1\u6548\u5e94</h4>"
+        "<div style='display:flex;align-items:baseline;gap:8px'>"
+        "<b style='font-size:22px;color:#e05a4f'>{}/15</b>"
+        "<span style='font-size:11px;color:#8895a5'>{} · \u81ea\u7b97\u5feb\u7167</span>"
+        "</div>".format(money, mtag) + scale +
+        "<div style='margin-top:4px'>" +
+        _ov_kv("\u4e0a\u6da8\u5360\u6bd4", "{}%".format(f0(up_ratio))) +
+        _ov_kv("\u6da8\u8dcc\u6bd4", "{:.2f}".format(spread or 0)) +
+        _ov_kv("\u6da8\u505c / \u8dcc\u505c", "{} / {}".format(f0(lu), f0(ld))) +
+        _ov_kv("\u4e24\u5e02\u6210\u4ea4\u989d",
+               "{:,.0f} \u4ebf\uff08{}\uff09".format(
+                   amount, "\u76d8\u4e2d" if intraday else "\u6536\u76d8")
+               if amount else "\u5f85\u8865") +
+        "</div><div style='font-size:9.5px;color:#a5b1bf;margin-top:3px'>"
+        "\u8bc4\u5206=\u591a\u9879\u5e7f\u5ea6\u8bfb\u6570\u89c4\u5219\u6f14\u7b97\uff0c"
+        "\u975e\u6295\u8d44\u5efa\u8bae</div></section>")
+
+    avoid = 100 - sent if sent is not None else None
+    col_e = _ov_col("\u60c5\u7eea\u8bfb\u6570", "#e05a4f", [
+        _ov_kv("\u907f\u9669\u603b\u5206", "{}/100".format(avoid)
+               if avoid is not None else "\u5f85\u8865"),
+        _ov_kv("\u81ea\u7b97\u6050\u8d2a", "{}/100 · {}".format(sent, sent_tag)
+               if sent is not None else "\u5f85\u8865"),
+        _ov_kv("\u97ed\u5708\u513f\u6050\u8d2a",
+               "\u5f85\u8865\uff08\u5916\u90e8\u6e90\uff09", "#a5b1bf"),
+        _ov_kv("\u77ed\u671f\u8fc7\u70ed\u5224\u5b9a", band),
+        _ov_kv("VIX", "{:.2f}".format(ext["vix"])
+               if ext["vix"] is not None else "\u672a\u91c7\u96c6"),
+    ])
+    col_s = _ov_col("\u4fe1\u53f7 / \u5207\u5206", "#b26a00", [
+        _ov_kv("\u8001\u8f68\u4ef2\u88c1\u4ed3\u4f4d",
+               "\u957f\u7ebf {}% / \u77ed\u7ebf {}%".format(base, short)),
+        _ov_kv("\u6454\u676f\u5224\u5b9a",
+               "\u51b0\u70b9\u5f85\u6454\u676f" if band == "\u51b0\u70b9"
+               else "\u672a\u89e6\u53d1"),
+        _ov_kv("\u60c5\u7eea / \u8d44\u91d1\u5207\u5206",
+               "\u60c5\u7eea{} · \u8d44\u91d1{}".format(
+                   sent_tag, "\u51c0\u6d41\u51fa" if (k["fflow"] or 0) < 0
+                   else "\u51c0\u6d41\u5165")),
+        _ov_kv("\u5438\u8840\u9762\u677f",
+               "\u9ad8\u96c6\u4e2d · \u5438\u8840" if (cert or 0) >= 60
+               else "\u5747\u8861"),
+    ])
+    cards.append("<section class='card'><h4>\u907f\u9669\u60c5\u7eea</h4>"
+                 "<div style='display:flex;gap:14px'>" + col_e + col_s +
+                 "</div><div style='font-size:9.5px;color:#a5b1bf;"
+                 "margin-top:3px'>\u907f\u9669/\u6050\u614c\u7b2c\u4e09\u89c6\u89d2 · "
+                 "\u72ec\u7acb\u53c2\u8003</div></section>")
+
+    rate_col = _ov_col("\u5927\u76d8\u8bc4\u7ea7", "#25599b", [
+        _ov_kv("\u5f53\u65e5\u8bc4\u7ea7", "{} · {}".format(grade, band)),
+        _ov_kv("\u5f97\u5206\u7387", "{:.1f}%".format(rate)),
+        _ov_kv("\u5426\u51b3\u9879", "\u89e6\u53d1" if veto else "\u65e0"),
+        _ov_kv("\u4e3b\u5bfc\u7ef4\u5ea6", s["lead"] or "\u2014"),
+        _ov_kv("\u8fd160\u65e5\u8bc4\u7ea7\u8f68\u8ff9",
+               "\u5f85\u8865\uff08\u9700\u5386\u53f2\uff09", "#a5b1bf"),
+    ])
+    pos_col = _ov_col("\u4ed3\u4f4d\u914d\u6bd4\u53c2\u8003", "#b26a00", [
+        _ov_kv("\u957f\u7ebf · \u5e95\u4ed3", "{}%".format(base)),
+        _ov_kv("\u77ed\u7ebf · \u673a\u52a8", "{}%".format(short)),
+    ])
+    bars2 = ("<div style='display:flex;height:12px;border-radius:5px;"
+             "overflow:hidden;margin-top:8px'>"
+             "<i style='width:{}%;background:#3b7dd8'></i>"
+             "<i style='width:{}%;background:#f0a04b'></i></div>").format(
+                 base, short)
+    cards.append("<section class='card'><h4>\u5927\u76d8\u8bc4\u7ea7 · "
+                 "\u4ed3\u4f4d\u914d\u6bd4</h4>"
+                 "<div style='display:flex;gap:14px'>" + rate_col + pos_col +
+                 "</div>" + bars2 +
+                 "<div style='font-size:9.5px;color:#a5b1bf;margin-top:3px'>"
+                 "\u81ea\u7b97 · \u8bfb\u6570\u5c55\u793a\uff0c\u975e\u5efa\u8bae</div>"
+                 "</section>")
+
+    tiers = [("1\u677f", 1), ("2\u677f", 2), ("3\u677f", 3),
+             ("4\u677f", 4), ("5\u677f+", 5)]
+    cnts = [(lab, sum(1 for z in zt if (z["lb"] == v if v < 5
+                                        else z["lb"] >= 5)))
+            for lab, v in tiers]
+    mx = max([c for _, c in cnts] or [1]) or 1
+    rows = []
+    for lab, c in cnts:
+        rows.append(
+            ("<div style='display:flex;align-items:center;gap:7px;font-size:11px;"
+             "line-height:1.9'><span style='flex:0 0 34px;color:#8895a5'>"
+             "{}</span><div style='flex:1 1 0;background:#f4f7fb;"
+             "border-radius:3px;height:9px'><i style='display:block;width:{:.1f}%;"
+             "height:100%;background:#e05a4f;border-radius:3px'></i></div>"
+             "<b style='flex:0 0 20px;text-align:right;color:#33465c'>{}</b>"
+             "</div>").format(lab, 100.0 * c / mx, c))
+    topzt = max(zt, key=lambda z: z["lb"]) if zt else None
+    cards.append("<section class='card'><h4>\u8fde\u677f\u68af\u961f</h4>" +
+                 ("<div style='display:flex;gap:6px;align-items:center'>"
+                  + _pill("\u9664 ST", "#e8f1ff", "#25599b") +
+                  "<span style='font-size:10px;color:#8895a5'>\u6700\u9ad8\u6807 "
+                  "{} {} \u677f</span></div>".format(
+                      esc(topzt["name"]), topzt["lb"]) if topzt else
+                  "<div style='font-size:11px;color:#8895a5'>\u5f85\u8865</div>") +
+                 "<div style='margin-top:5px'>" + "".join(rows) +
+                 "</div></section>")
+
+    if t20 is not None and t20rows:
+        ratio20 = 100.0 * t20 / amount if amount else None
+        t20_body = (
+            "<div style='display:flex;align-items:baseline;gap:8px'>"
+            "<b style='font-size:20px;color:#25599b'>{:.1f}%</b>"
+            "<span style='font-size:10px;color:#8895a5'>TOP20 \u5408\u8ba1 "
+            "{:,.0f} \u4ebf / \u4e24\u5e02 {:,.0f} \u4ebf</span></div>"
+            "<div style='margin-top:4px'>".format(
+                ratio20 or 0, t20, amount or 0) +
+            "".join(_ov_kv("{}. {}".format(i, esc(n)),
+                           "{:.0f} \u4ebf".format(v))
+                    for i, (n, v) in enumerate(t20rows[:5], 1)) +
+            "</div><div style='font-size:9.5px;color:#a5b1bf;margin-top:3px'>"
+            "TOP20 \u4e3a\u5b9e\u65f6\u699c\u5355\uff0c\u5206\u6bcd\u4e3a"
+            "\u4e24\u5e02\u6210\u4ea4\u989d\uff0c\u65f6\u70b9\u53ef\u80fd\u4e0d\u540c"
+            "\u4ec5\u4f5c\u53c2\u8003</div>")
+    else:
+        t20_body = ("<div style='font-size:11px;color:#8895a5'>"
+                    "\u5f85\u8865\uff08\u4e2a\u80a1\u6210\u4ea4\u989d\u672a\u91c7\u96c6\uff09"
+                    "</div>")
+    cards.append("<section class='card'><h4>\u5168\u5e02\u573a\u6210\u4ea4\u989d "
+                 "TOP20</h4>" + t20_body + "</section>")
+
+    srcs = [
+        ("\u62a5\u544a\u5feb\u7167", amount is not None,
+         "\u6210\u4ea4\u989d / \u5e7f\u5ea6"),
+        ("\u6da8\u505c\u6c60\uff08\u4e1c\u8d22\uff09", bool(zt),
+         "{} \u5bb6".format(len(zt))),
+        ("\u4e3b\u529b\u4e70\u76d8\uff08\u4e1c\u8d22\uff09",
+         k["fflow"] is not None,
+         "{:+.0f} \u4ebf".format(k["fflow"]) if k["fflow"] is not None
+         else "\u672a\u91c7\u96c6"),
+        ("\u5916\u56f4\u6307\u6570", bool(ext["indices"]),
+         "{} \u4e2a".format(len(ext["indices"]))),
+        ("VIX", ext["vix"] is not None,
+         "{:.2f}".format(ext["vix"]) if ext["vix"] is not None
+         else "\u672a\u91c7\u96c6"),
+        ("\u671f\u6307\u57fa\u5dee", bool(k["basis"]),
+         "{} \u5408\u7ea6".format(len(k["basis"]))),
+        ("\u6210\u4ea4\u989d TOP20", bool(t20rows),
+         "{} \u53ea".format(len(t20rows))),
+        ("\u8bc4\u5206\u5f15\u64ce", True, "\u5f97\u5206\u7387 {:.1f}%".format(rate)),
+    ]
+    src_rows = []
+    for nm, ok, note in srcs:
+        src_rows.append(
+            ("<div style='display:flex;align-items:center;gap:6px;font-size:10.5px;"
+             "line-height:1.8'><i style='width:7px;height:7px;border-radius:50%;"
+             "background:{};flex:0 0 7px'></i>"
+             "<span style='flex:1 1 0;color:#33465c'>{}</span>"
+             "<span style='color:#8895a5'>{}</span></div>").format(
+                 "#2e9e7b" if ok else "#e05a4f", esc(nm), esc(note)))
+    cards.append("<section class='card'><h4>\u6570\u636e\u6e90\u5065\u5eb7\u5ea6</h4>"
+                 "<div style='display:grid;grid-template-columns:1fr 1fr;"
+                 "column-gap:12px'>" + "".join(src_rows) + "</div></section>")
+    return cards
+
+
+def overview_blocks(html, k=None, intraday=None):
+    """前置整行两块（总述/关键数据） + 尾部卡片组。"""
+    k = k or _parse_kdata(html)
+    if intraday is None:
+        intraday = _is_intraday(html)
+    cards = overview_cards(html, k, intraday)
+    tail = (cards[2:3] + extra_cards(html, k, intraday) +
+            cards[3:5])
+    return ("<!--ovh-start-->" + "".join(cards[:2]) + "<!--ovh-end-->",
+            "<!--ovt-start-->" + "".join(tail) + "<!--ovt-end-->")
+
+
+def sync_overview(html, k=None):
+    """把盘面面板并入看板网格：两块整行卡置顶，其余置尾（幂等）。"""
+    head, tail = overview_blocks(html, k)
+    for mark in ("ov-start", "ovh-start", "ovt-start"):  # 清旧块，含旧版单块
+        end = mark.replace("start", "end")
+        html = re.sub(r"<!--" + mark + r"-->.*?<!--" + end + r"-->",
+                      "", html, count=1, flags=re.S)
+    html = re.sub(r"(<div class='dash'>)", lambda m: m.group(1) + head,
+                  html, count=1)
+    return html.replace("</div><!--viz-end-->",
+                        tail + "</div><!--viz-end-->", 1)
+
+
 def _score_inputs(html):
     """从报告头或精简看板的隐藏锚点区提取评分读数。"""
     m = re.search(r"<div class='srcdata' hidden>(.*?)<hr/>", html, re.S)
@@ -6687,19 +7498,9 @@ def _score_inputs(html):
         mm = re.search(pat, t)
         return _viz_num(mm.group(1)) if mm else None
 
-    def index_gap():
-        """权重指数相对成长指数的抗跌差：精简页读条形图 title，完整报告读 1.1 表。"""
-        pcts = {}
-        for ttl in re.findall(r"<div class='hb' title='([^']+?)'>", html):
-            if ":" in ttl:
-                n, v = ttl.rsplit(":", 1)
-                pcts[n.strip()] = _viz_num(v)
-        if not pcts:
-            for r in _viz_rows(html, "1.1 指数概览")[1:]:
-                if len(r) > 2:
-                    pcts[r[0]] = _viz_num(r[2])
-        a, b = pcts.get("上证指数"), pcts.get("创业板指")
-        return a - b if a is not None and b is not None else None
+    pcts = _index_pcts(html)
+    a, b = pcts.get("上证指数"), pcts.get("创业板指")
+    gap = a - b if a is not None and b is not None else None
 
     bp = re.search(r"净流入板块\s*(\d+)\s*/\s*(\d+)", t)
     pp = re.search(r"自建画像\s*(\d+)\s*/\s*(\d+)", t)
@@ -6719,7 +7520,7 @@ def _score_inputs(html):
         "pos20": g(r"近20日仅\s*(\d+)%"),
         "prof": (100.0 * int(pp.group(1)) / int(pp.group(2))
                  if pp and int(pp.group(2)) else None),
-        "weight_gap": index_gap(),
+        "weight_gap": gap,
     }
 
 
@@ -6751,7 +7552,7 @@ def score_engine(d):
 
     dims, avail, capital = [], 0.0, 0.0
     for (name, full), v in zip(SCORE_DIMS,
-                               (inst, hot, lead, foreign, retail)):
+                               (inst, lead, foreign, retail, hot)):
         if v is None:
             dims.append((name, full, 0.0, False))
             continue
@@ -6902,6 +7703,296 @@ def sync_score_widgets(html):
     return html
 
 
+_TECH_KW = ("半导体", "元件", "通信设备", "软件开发", "计算机", "电子",
+            "通信", "存储", "芯片", "科技")
+_DEF_KW = ("电力", "银行", "铁路", "公路", "公用", "食品", "医药",
+           "煤炭", "保险", "种植")
+
+
+def _pill(text, bg, fg):
+    return ("<span style='display:inline-block;padding:1px 7px;border-radius:999px;"
+            "background:{};color:{};font-size:10.5px;font-weight:600;"
+            "white-space:nowrap'>{}</span>").format(bg, fg, esc(text))
+
+
+def _gather_external(html):
+    """从完整报告 6.1 外围指数表取涨跌幅，并抓实时 VIX。"""
+    rows = _viz_rows(html, "6.1 外围指数")[1:]
+    indices = []
+    for r in rows:
+        if len(r) >= 4:
+            v = _viz_num(r[3])
+            if v is not None:
+                indices.append((r[0], v))
+    return {"indices": indices, "vix": fetch_vix()}
+
+
+def _ext_html(ext):
+    parts = []
+    if ext["indices"]:
+        parts.append("外围指数:" + " ".join("{}:{:+.2f}".format(n, v)
+                                            for n, v in ext["indices"]))
+    if ext["vix"] is not None:
+        parts.append("VIX:{:.2f}".format(ext["vix"]))
+    return "<div class='extdata' hidden>" + " ".join(parts) + "</div>"
+
+
+def _parse_external(html):
+    m = re.search(r"<div class='extdata' hidden>(.*?)</div>", html, re.S)
+    if not m:
+        return {"indices": [], "vix": None}
+    t = re.sub(r"<[^>]+>", " ", m.group(1))
+    indices, vix = [], None
+    gm = re.search(r"外围指数:(.*?)(?:VIX:|$)", t, re.S)
+    if gm:
+        for kv in gm.group(1).split():
+            if ":" in kv:
+                n, v = kv.rsplit(":", 1)
+                vv = _viz_num(v)
+                if vv is not None:
+                    indices.append((n, vv))
+    gv = re.search(r"VIX:([+\-]?[\d.]+)", t)
+    if gv:
+        vix = float(gv.group(1))
+    return {"indices": indices, "vix": vix}
+
+
+def sync_external(html, report_html):
+    """一次性：把完整报告的外围指数 + 实时 VIX 注入精简页，供 ④ 评估。"""
+    if "extdata" in html:
+        return html
+    ext = _gather_external(report_html or html)
+    if not ext["indices"] and ext["vix"] is None:
+        return html
+    return html.replace("</body>", _ext_html(ext) + "</body>", 1)
+
+
+def board_panels(html):
+    """主线判断 + 大团圆结局：全部由报告读数自算，规则演算非建议。"""
+    d = _score_inputs(html)
+    ins, outs = _flow_any(html)
+    idx = _index_pcts(html)
+    in_ratio = (d["in_n"] / d["board_n"]
+                if d["in_n"] is not None and d["board_n"] else 0.15)
+    diffusion = round(in_ratio * 100)
+    top1 = ins[0][1] if ins else 0.0
+    top5 = sum(v for _, v in ins[:5]) or 1.0
+    certainty = round(100.0 * top1 / top5) if ins else 50
+    tech_out = sum(1 for nm, _ in outs[:8]
+                   if any(k in nm for k in _TECH_KW))
+    rotation = (round(100.0 * (1 - tech_out / max(1, len(outs[:8]))))
+                if outs else 50)
+    dm = re.search(r"\d{4}-\d{2}-\d{2}",
+                   re.sub(r"<[^>]+>", " ", html[:12000]))
+    day = dm.group() if dm else ""
+
+    def grade(v, top):
+        """相对主线强度的等级标注，负值不标。"""
+        if top <= 0 or v <= 0:
+            return ""
+        r = v / top
+        return (" S" if r >= 0.85 else " A" if r >= 0.6 else
+                " B" if r >= 0.35 else " C")
+
+    def fmt(rows, n=4):
+        if not rows:
+            return "—"
+        return " · ".join("{}{} {:.0f}%".format(nm, grade(v, top1),
+                                                100.0 * v / top1)
+                          for nm, v in rows[:n])
+
+    card = ("background:#fff;border:1px solid #e3e9f2;border-radius:10px;"
+            "padding:9px 12px;box-shadow:0 1px 3px rgba(30,60,100,.06);"
+            "flex:1 1 280px;min-width:0")
+    state = "主线待确认·无扩散" if diffusion < 30 else "主线扩散中"
+    pills = "".join((
+        _pill(state, "#8f3b33", "#ffffff") if diffusion < 30
+        else _pill(state, "#eaf6ee", "#2e7d55"),
+        _pill("锁定度 {}%".format(certainty), "#eaf6ee", "#2e7d55"),
+        _pill("扩散 {}".format("无" if diffusion < 30 else "{}%".format(diffusion)),
+              "#fff3e0", "#9a5b00"),
+        _pill("轮动 {}%".format(rotation), "#f2ecff", "#6b4bb5"),
+    ))
+    left = (
+        "<section style='" + card + "'>"
+        "<div style='display:flex;justify-content:space-between;align-items:center;gap:8px'>"
+        "<b style='font-size:12.5px;color:#1a4d8f'>主线判断</b>"
+        "<span style='font-size:10px;color:#8895a5'>任务日盘后 20:00 前更新</span>"
+        "</div><div style='display:flex;gap:5px;flex-wrap:wrap;margin:6px 0 4px'>" +
+        pills + "</div><div style='display:flex;justify-content:space-between;"
+        "align-items:center;margin-top:2px'>"
+        "<span style='font-size:10px;color:#8895a5'>日期 " + day + "</span>"
+        "<span style='display:flex;gap:6px;align-items:center'>"
+        "<b style='font-size:14px;color:#1a4d8f'>" + esc(ins[0][0] if ins else "—") +
+        "</b>" + _pill("锁定度 {}%".format(certainty), "#eaf6ee", "#2e7d55") +
+        "</span></div><div style='font-size:11px;color:#33465c;line-height:1.6;margin-top:3px'>" +
+        "<div>主线候选 {}</div>".format(esc(fmt(ins))) +
+        "<div>支线候选 {}</div>".format(esc(fmt(ins[4:]))) +
+        "<div>扩散候选 {}</div>".format(
+            "无 · 行业/兄弟行业板块" if diffusion < 30 else
+            "净流入板块 {}/{} · 扩散 {}%".format(
+                d["in_n"] or 0, d["board_n"] or 0, diffusion)) +
+        "</div></section>")
+
+    gv = [idx.get(k) for k in ("创业板指", "科创50")]
+    gv = [v for v in gv if v is not None]
+    growth = sum(gv) / len(gv) if gv else None
+    weight = idx.get("上证指数")
+    gap = weight - growth if (weight is not None and growth is not None) else None
+    c1 = gap is not None and gap > 1.5
+    n1 = ("权重 {:+.2f}% vs 成长 {:+.2f}%（差 {:.2f}pct）".format(weight, growth, gap)
+          if gap is not None else "指数结构数据不足")
+    fin = [(nm, v) for nm, v in ins
+           if any(k in nm for k in ("银行", "城商行", "农商行",
+                                    "证券", "保险", "非银"))]
+    if fin:
+        n1 += " · 大金融 " + "、".join("{} +{:.0f}亿".format(nm, v)
+                                       for nm, v in fin[:2])
+    g50, cyb = idx.get("科创50"), idx.get("创业板指")
+    pre = []
+    if g50 is not None:
+        pre.append("科创50 {:+.2f}%".format(g50))
+    if cyb is not None:
+        pre.append("创业板指 {:+.2f}%".format(cyb))
+    c2 = tech_out >= 3
+    n2 = (" · ".join(pre) + " · " if pre else "") + \
+        "科技类占净流出 Top {}/{}".format(tech_out, len(outs[:8]))
+    def_names = [nm for nm, _ in ins if any(k in nm for k in _DEF_KW)]
+    c3 = len(def_names) >= 1 and in_ratio < 0.3
+    n3 = ((" · ".join(def_names[:4]) + "（{} 个）".format(len(def_names)))
+          if def_names else "防御/低位无净流入") + " · 扩散 {}%".format(diffusion)
+    ext = _parse_external(html)
+    if ext["indices"] or ext["vix"] is not None:
+        worst = min((v for _, v in ext["indices"]), default=0.0)
+        vix = ext["vix"]
+        c4 = (worst >= -2.0) and (vix is None or vix < 22)
+        bits = []
+        if ext["indices"]:
+            ups = sum(1 for _, v in ext["indices"] if v >= 0)
+            wn, wv = min(ext["indices"], key=lambda x: x[1])
+            bits.append("外围 {}涨/{}跌".format(ups, len(ext["indices"]) - ups))
+            bits.append("最弱 {}{:+.2f}%".format(wn, wv))
+        bits.append("VIX {:.2f}".format(vix) if vix is not None
+                    else "VIX 未采集")
+        n4 = " · ".join(bits)
+        hit_total = 4
+    else:
+        c4 = None
+        n4 = "外围/VIX 快照缺失，待补"
+        hit_total = 3
+    hit = sum(1 for x in (c1, c2, c3, c4) if x)
+
+    def cond(mark, ok, title, note):
+        color = ("#2e9e7b" if ok is True else
+                 "#e05a4f" if ok is False else "#8895a5")
+        return ("<div style='display:flex;gap:6px;align-items:baseline;"
+                "font-size:11px;line-height:1.5'>"
+                "<b style='color:{};font-size:12px;flex:0 0 10px'>{}</b>"
+                "<span style='color:#33465c;flex:0 0 auto'>{}</span>"
+                "<span style='color:#8895a5;font-size:10px;overflow:hidden;"
+                "text-overflow:ellipsis;white-space:nowrap'>{}</span></div>").format(
+                    color, mark, esc(title), esc(note))
+
+    right = (
+        "<section style='" + card + "'>"
+        "<div style='display:flex;justify-content:space-between;align-items:center;gap:8px'>"
+        "<b style='font-size:12.5px;color:#1a4d8f'>大团圆结局</b>"
+        "<span style='font-size:10px;color:#8895a5'>四条件 · 自算 · 判断时点 " +
+        day + "</span>"
+        "</div><div style='display:flex;gap:5px;flex-wrap:wrap;margin:6px 0 4px'>" +
+        _pill("满足 {}/{}".format(hit, hit_total) +
+              ("" if hit_total == 4 else " · 1 项待补"), "#e8f1ff", "#25599b") +
+        _pill("基准情景", "#eaf6ee", "#2e7d55") + "</div>" +
+        cond("✓" if c1 else "✗", c1, "① 大逻辑中趋势", n1) +
+        cond("✓" if c2 else "✗", c2, "② 科技不抢跑", n2) +
+        cond("✓" if c3 else "✗", c3, "③ 低位轮动", n3) +
+        cond("✓" if c4 else "✗", c4, "④ 海外不恶化", n4) +
+        "</section>")
+    return ("<!--panels-start--><div class='panels' style='display:flex;"
+            "flex-wrap:wrap;gap:12px;margin:0'>" + left + right +
+            "</div><!--panels-end-->")
+
+
+def sync_panels(html):
+    """已生成看板：插入或更新主线判断 / 大团圆结局两面板（幂等）。"""
+    panels = board_panels(html)
+    if "<!--panels-start-->" in html:
+        return re.sub(r"<!--panels-start-->.*?<!--panels-end-->",
+                      lambda _: panels, html, count=1, flags=re.S)
+    return re.sub(r"(<div class='dash'>)",
+                  lambda m: panels + m.group(1), html, count=1)
+
+
+def sync_dash_css(html):
+    """已生成页面同步落单判定规则（幂等）。"""
+    return html.replace(".dash .card:last-child:nth-child(odd)",
+                        ".dash .card:last-child:nth-of-type(odd)")
+
+
+def sync_amount_note(html):
+    """只修正可见 KPI：指标名与口径标注随时点切换（幂等），隐藏锚点不动。"""
+    m = re.search(r"(<div class='kpis'>)(.*?)(</div>\s*<div class='dash'>)",
+                  html, re.S)
+    if not m:
+        return html
+    d = _score_inputs(html)
+    intraday = "盘中 · 未收盘" in html
+    note = ("盘中累计 · 环比口径不可比" if intraday else
+            "较上日 {:+.2f}%".format(d["chg"])
+            if d["chg"] is not None else "收盘 · 终值")
+    block = m.group(2)
+    block = block.replace("全市场成交额·亿", "两市成交额·亿")
+    if "两市成交额·亿" not in block:
+        block = block.replace("成交额·亿", "两市成交额·亿")
+    block = re.sub(
+        r"较昨同时点\s*[+\-]?[\d.]+%|盘中累计 · 环比口径不可比"
+        r"|较上日\s*[+\-]?[\d.]+%",
+        lambda _: note, block)
+    return html[:m.start(2)] + block + html[m.end(2):]
+
+
+_DROP_CARD_TITLES = ("涨跌结构", "涨跌分布", "日内广度", "成交额趋势",
+                     "指数分时", "指数 PE")
+
+
+def sync_drop_cards(html):
+    """移除已生成看板里不再保留的四张旧图卡（幂等）。"""
+    for title in _DROP_CARD_TITLES:
+        html = re.sub(r"<section class='card'><h4>" + title +
+                      r"</h4>.*?</section>", "", html,
+                      count=1, flags=re.S)
+    return html
+
+
+def sync_pair_pos(html):
+    """雷达 + 指数涨跌幅上移三位：置于网格最前（幂等）。"""
+    mr = re.search(r"<!--radar-start-->.*?<!--radar-end-->", html, re.S)
+    mi = re.search(r"<section class='card'><h4>指数涨跌幅（%）</h4>.*?</section>",
+                   html, re.S)
+    if not (mr and mi):
+        return html
+    pair = mr.group(0) + mi.group(0)
+    html = html.replace(mr.group(0), "", 1)
+    html = html.replace(mi.group(0), "", 1)
+    return re.sub(r"(<div class='dash'>)",
+                  lambda m: m.group(1) + pair, html, count=1)
+
+
+def sync_panels_pos(html):
+    """面板行下移两位：置于两张整行盘面卡之后，作为网格整行（幂等）。"""
+    m = re.search(r"<!--panels-start-->.*?<!--panels-end-->", html, re.S)
+    if not m:
+        return html
+    block = m.group(0)
+    wrapped = ("<div style='grid-column:1/-1'>" + block + "</div>")
+    html = html.replace(wrapped, "", 1)
+    html = html.replace(block, "", 1)
+    if "<!--ovh-end-->" in html:
+        return html.replace("<!--ovh-end-->", "<!--ovh-end-->" + wrapped, 1)
+    return re.sub(r"(<div class='dash'>)",
+                  lambda mm: mm.group(1) + wrapped, html, count=1)
+
+
 def polish_dashboard(html):
     """只输出「结果可视化看板」：分析章节、论证文字、样本池图表全部删除。
 
@@ -6910,7 +8001,10 @@ def polish_dashboard(html):
     不渲染，也不含分析步骤。已生成的看板只重算结论/评分，保证幂等。
     """
     if "<!--viz-start-->" in html:
-        return sync_score_widgets(refresh_verdict(html))
+        return sync_amount_note(sync_drop_cards(sync_pair_pos(sync_dash_css(
+            sync_panels_pos(sync_panels(sync_overview(sync_rotation(
+                sync_score_widgets(sync_top20(
+                    refresh_verdict(html)))))))))))
     mb = re.search(r"(<body[^>]*>)(.*)(</body>)", html, re.S)
     if not mb:
         return html
@@ -6974,10 +8068,11 @@ def polish_dashboard(html):
     if ratio is not None:
         kpis += kpi_ring("上涨占比", "{:.0f}%".format(ratio), ratio, "#e05a4f")
     if amount is not None:
-        kpis += kpi_bar("成交额·亿", "{:,.0f}".format(amount),
-                        abs(chg) * 3 if chg is not None else 60,
-                        "较昨同时点 {:+.2f}%".format(chg)
-                        if chg is not None else "盘中累计", "#3b7dd8")
+        note = ("盘中累计 · 环比口径不可比" if intraday else
+                "较上日 {:+.2f}%".format(chg) if chg is not None
+                else "收盘 · 终值")
+        kpis += kpi_bar("两市成交额·亿", "{:,.0f}".format(amount),
+                        100.0 * amount / 20000, note, "#3b7dd8")
     if net is not None:
         kpis += kpi_bar("板块净额·亿", "{:+.0f}".format(net), abs(net) / 6,
                         "行业合计", "#2e9e7b" if net < 0 else "#e05a4f")
@@ -7012,47 +8107,28 @@ def polish_dashboard(html):
                         .format(lab, v, lab, bar, v))
         cards.append(card("指数涨跌幅（%）", "".join(bars)))
 
-    stack = ""
-    if up_n and dn_n and up_n + dn_n > 0:
-        pu = 100.0 * up_n / (up_n + dn_n)
-        stack += ("<div class='stack'><i style='width:{:.1f}%;background:#e05a4f'>"
-                  "</i><i style='width:{:.1f}%;background:#2e9e7b'></i></div>"
-                  "<div class='slegend'><span>上涨 <b>{:,.0f}</b></span>"
-                  "<span>下跌 <b>{:,.0f}</b></span></div>").format(
-                      pu, 100 - pu, up_n, dn_n)
-    if lu is not None and ld is not None and lu + ld > 0:
-        pl = 100.0 * lu / (lu + ld)
-        stack += ("<div class='stack'><i style='width:{:.1f}%;background:#e05a4f'>"
-                  "</i><i style='width:{:.1f}%;background:#2e9e7b'></i></div>"
-                  "<div class='slegend'><span>涨停 <b>{:.0f}</b></span>"
-                  "<span>跌停 <b>{:.0f}</b></span></div>").format(
-                      pl, 100 - pl, lu, ld)
-    if stack:
-        cards.append(card("涨跌结构", stack))
-
-    # 只保留全市场口径的结果图；带「样本」的池内图表一律不进看板
-    keep = (("全市场涨跌幅区间分布", "涨跌分布"),
-            ("日内全市场上涨家数占比演变", "日内广度"),
-            ("两市成交额趋势", "成交额趋势"),
-            ("上证指数日内分时", "指数分时"),
-            ("行业主力净流入", "行业流入 Top"),
-            ("行业主力净流出", "行业流出 Top"),
-            ("A股主要指数 PE", "指数 PE"))
-    found = {}
-    for s in re.findall(r"<svg\b.*?</svg>", body, re.S):
-        tm = re.search(r'<text[^>]*font-weight="600"[^>]*>(.*?)</text>', s, re.S)
-        title = tm.group(1) if tm else ""
-        if "样本" in title:
-            continue
-        for key, short in keep:
-            if key in title and key not in found:
-                found[key] = card(short, s)
-    for key, _ in keep:
-        if key in found:
-            cards.append(found[key])
+    ins = _flow_rows_table(body, "4.2 行业主力净流入")
+    outs = _flow_rows_table(body, "4.3 行业主力净流出")
+    ins = ins or [(n, None, v) for n, v in _flow_top(html, "行业主力净流入")]
+    outs = outs or [(n, None, v) for n, v in _flow_top(html, "行业主力净流出")]
+    if ins or outs:
+        cards.append(_rotation_card(ins, outs))
+    k = _gather_kdata(html)
+    kd = _kdata_html(k)
+    ovh, ovt = overview_blocks(html, k, intraday)
+    cards.insert(0, ovh)
+    cards.append(ovt)
 
     verdict = _verdict_html(_verdict_text(concl.group(0)))
     bar = _score_bar_html(score)
+    ext = _gather_external(html)
+    ext_html = _ext_html(ext)
+    html_ext = html.replace("</body>", ext_html + "</body>", 1) if ext_html else html
+    panels = board_panels(html_ext)
+    cards.insert(1, "<div style='grid-column:1/-1'>" + panels + "</div>")
+    front = [c for c in cards if ("<!--radar-start-->" in c or
+                                  "指数涨跌幅（%）" in c)]
+    cards = front + [c for c in cards if c not in front]
     viz = ("<!--viz-start--><h1>ETF 全景 · 结果看板</h1>" + verdict + bar + status +
            "<div class='kpis'>" + kpis + "</div>" +
            "<div class='dash'>" + "".join(cards) + "</div><!--viz-end-->")
@@ -7068,11 +8144,11 @@ def polish_dashboard(html):
                (intr.group(0) if intr else ""))
     hidden = "<div class='srcdata' hidden>" + anchors + "<hr/></div>"
 
-    out = (html[:mb.start(2)] + viz + "\n" + hidden + VIZ_JS +
-           html[mb.end(2):])
+    out = (html[:mb.start(2)] + viz + "\n" + hidden + ext_html + kd +
+           _t20_html(*k["t20"]) + VIZ_JS + html[mb.end(2):])
     out = re.sub(r"<style[^>]*>.*?</style>", "", out, flags=re.S)
     out = re.sub(r"<title>.*?</title>", "<title>ETF 结果看板</title>", out,
-                 flags=re.S)
+                 count=1, flags=re.S)
     return out.replace("</head>", "<style>" + VIZ_CSS + "</style></head>", 1)
 
 
