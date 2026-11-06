@@ -6663,12 +6663,12 @@ def sync_fundflow_out(html, report_html):
     return html[:m.end()] + card + html[m.end():]
 
 
-# ---- 自算评分引擎：六维结构 + 综合得分率 ----------------------------------
+# ---- 自算评分引擎：五维结构 + 综合得分率 ----------------------------------
 # 全部由本报告读数线性归一后加权，不引用外部评分源；权重即各维满分，合计 100。
-SCORE_DIMS = (("机构", 20), ("游资", 20), ("龙头主导", 25),
-              ("外资", 10), ("散户", 15), ("量能", 10))
-_RADAR_UNIT = ((0, -1), (0.866, -0.5), (0.866, 0.5),
-               (0, 1), (-0.866, 0.5), (-0.866, -0.5))
+SCORE_DIMS = (("机构", 22), ("游资", 22), ("龙头主导", 28),
+              ("外资", 11), ("散户", 17))
+_RADAR_UNIT = ((0, -1), (0.951, -0.309), (0.588, 0.809),
+               (-0.588, 0.809), (-0.951, -0.309))
 
 
 def _score_lin(x, lo, hi):
@@ -6724,7 +6724,7 @@ def _score_inputs(html):
 
 
 def score_engine(d):
-    """资金势力六维总分与综合得分率分开算；否决只压得分率，不覆盖格局。"""
+    """资金势力五维总分与综合得分率分开算；否决只压得分率，不覆盖格局。"""
     lin = _score_lin
 
     def mix(parts):
@@ -6748,12 +6748,10 @@ def score_engine(d):
     foreign = mix([(lin(d["basis"], -3, 1), 0.5),
                    (lin(d["erp"], -2, 5), 0.5)])
     retail = lin(d["up_ratio"], 5, 80)
-    volume = mix([(lin(d["amount"], 8000, 20000), 0.6),
-                  (lin(d["chg"], -30, 30), 0.4)])
 
     dims, avail, capital = [], 0.0, 0.0
     for (name, full), v in zip(SCORE_DIMS,
-                               (inst, hot, lead, foreign, retail, volume)):
+                               (inst, hot, lead, foreign, retail)):
         if v is None:
             dims.append((name, full, 0.0, False))
             continue
@@ -6816,7 +6814,7 @@ def _score_bar_html(s):
             "<span style='background:{bc};color:#fff;border-radius:4px;padding:2px 7px;"
             "font-size:11px;font-weight:600'>{bn}</span>{vbadge}"
             "<span style='font-size:11px;color:#8895a5'>"
-            "六维加权 · 自有口径 · 规则演算，非建议</span></div>"
+            "五维加权 · 自有口径 · 规则演算，非建议</span></div>"
             "<div style='position:relative;height:12px;background:#eef2f7;"
             "border-radius:6px;overflow:hidden'>"
             "<i style='display:block;height:100%;width:{rate:.1f}%;background:{bc}'>"
@@ -6830,7 +6828,7 @@ def _score_bar_html(s):
 
 
 def _radar_card(s):
-    """六维雷达：纯 SVG 自绘，每维标 得分/满分。"""
+    """五维雷达：纯 SVG 自绘，每维标 得分/满分。"""
     cx, cy, R = 180.0, 118.0, 84.0
 
     def pt(i, r):
@@ -6841,10 +6839,10 @@ def _radar_card(s):
          "width='100%' style='max-width:380px;margin:0 auto;display:block;"
          "font-family:sans-serif'>"]
     for frac in (0.25, 0.5, 0.75, 1.0):
-        pts = " ".join("{:.1f},{:.1f}".format(*pt(i, R * frac)) for i in range(6))
+        pts = " ".join("{:.1f},{:.1f}".format(*pt(i, R * frac)) for i in range(len(_RADAR_UNIT)))
         p.append("<polygon points='{}' fill='none' stroke='#e6ebf2' "
                  "stroke-width='1'/>".format(pts))
-    for i in range(6):
+    for i in range(len(_RADAR_UNIT)):
         x, y = pt(i, R)
         p.append("<line x1='{:.1f}' y1='{:.1f}' x2='{:.1f}' y2='{:.1f}' "
                  "stroke='#e6ebf2'/>".format(cx, cy, x, y))
@@ -6876,7 +6874,7 @@ def _radar_card(s):
                      600 if hot else 400, anchor, val))
     p.append("</svg>")
     return ("<!--radar-start--><section class='card'>"
-            "<h4>资金势力 · 六维结构</h4><div class='chart'>{}</div>"
+            "<h4>资金势力 · 五维结构</h4><div class='chart'>{}</div>"
             "<div style='font-size:11px;color:#6b7684;text-align:center;"
             "margin-top:4px'>总分 {:.2f} · 格局 {} · "
             "<b style='color:#e05a4f'>主导 {}</b></div>"
