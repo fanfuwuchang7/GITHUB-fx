@@ -6663,15 +6663,256 @@ def sync_fundflow_out(html, report_html):
     return html[:m.end()] + card + html[m.end():]
 
 
+# ---- 自算评分引擎：六维结构 + 综合得分率 ----------------------------------
+# 全部由本报告读数线性归一后加权，不引用外部评分源；权重即各维满分，合计 100。
+SCORE_DIMS = (("机构", 20), ("游资", 20), ("龙头主导", 25),
+              ("外资", 10), ("散户", 15), ("量能", 10))
+_RADAR_UNIT = ((0, -1), (0.866, -0.5), (0.866, 0.5),
+               (0, 1), (-0.866, 0.5), (-0.866, -0.5))
+
+
+def _score_lin(x, lo, hi):
+    """把指标线性映射到 0~100 并截断；缺数据返回 None。"""
+    if x is None or hi == lo:
+        return None
+    return max(0.0, min(100.0, (x - lo) / (hi - lo) * 100.0))
+
+
+def _score_inputs(html):
+    """从报告头或精简看板的隐藏锚点区提取评分读数。"""
+    m = re.search(r"<div class='srcdata' hidden>(.*?)<hr/>", html, re.S)
+    t = re.sub(r"<[^>]+>", " ", m.group(1) if m else html[:20000])
+
+    def g(pat):
+        mm = re.search(pat, t)
+        return _viz_num(mm.group(1)) if mm else None
+
+    def index_gap():
+        """权重指数相对成长指数的抗跌差：精简页读条形图 title，完整报告读 1.1 表。"""
+        pcts = {}
+        for ttl in re.findall(r"<div class='hb' title='([^']+?)'>", html):
+            if ":" in ttl:
+                n, v = ttl.rsplit(":", 1)
+                pcts[n.strip()] = _viz_num(v)
+        if not pcts:
+            for r in _viz_rows(html, "1.1 指数概览")[1:]:
+                if len(r) > 2:
+                    pcts[r[0]] = _viz_num(r[2])
+        a, b = pcts.get("上证指数"), pcts.get("创业板指")
+        return a - b if a is not None and b is not None else None
+
+    bp = re.search(r"净流入板块\s*(\d+)\s*/\s*(\d+)", t)
+    pp = re.search(r"自建画像\s*(\d+)\s*/\s*(\d+)", t)
+    return {
+        "amount": g(r"成交额\s*([\d,.]+)\s*亿"),
+        "chg": g(r"(?:较昨日同时点|较上日)\s*([+\-\d.]+)%"),
+        "net": g(r"净额\s*([+\-\d.]+)\s*亿"),
+        "up_ratio": g(r"上涨占比\s*([\d.]+)%"),
+        "up": g(r"上涨\s*([\d,]+)\s*只"),
+        "down": g(r"下跌\s*([\d,]+)\s*只"),
+        "lu": g(r"涨停\s*(\d+)"),
+        "ld": g(r"跌停\s*(\d+)"),
+        "in_n": _viz_num(bp.group(1)) if bp else None,
+        "board_n": _viz_num(bp.group(2)) if bp else None,
+        "basis": g(r"IF\s*([+\-\d.]+)%"),
+        "erp": g(r"ERP\s*([+\-]?[\d.]+)pct"),
+        "pos20": g(r"近20日仅\s*(\d+)%"),
+        "prof": (100.0 * int(pp.group(1)) / int(pp.group(2))
+                 if pp and int(pp.group(2)) else None),
+        "weight_gap": index_gap(),
+    }
+
+
+def score_engine(d):
+    """资金势力六维总分与综合得分率分开算；否决只压得分率，不覆盖格局。"""
+    lin = _score_lin
+
+    def mix(parts):
+        ok = [(v, w) for v, w in parts if v is not None]
+        return (sum(v * w for v, w in ok) / sum(w for _, w in ok)
+                if ok else None)
+
+    in_ratio = (d["in_n"] / d["board_n"]
+                if d["in_n"] is not None and d["board_n"] else None)
+    inst = mix([(lin(d["net"], -600, 300), 0.6),
+                (lin(in_ratio * 100, 0, 60)
+                 if in_ratio is not None else None, 0.4)])
+    hot = mix([(lin(d["lu"], 0, 80), 0.5),
+               (lin(100.0 * d["lu"] / (d["lu"] + d["ld"]), 0, 100)
+                if d["lu"] is not None and d["ld"] is not None
+                and d["lu"] + d["ld"] else None, 0.5)])
+    # 龙头/护盘：权重指数相对成长指数的抗跌差 + 行业资金流入集中度
+    lead = mix([(lin(d["weight_gap"], -2, 4), 0.6),
+                (lin(in_ratio * 100, 0, 60)
+                 if in_ratio is not None else None, 0.4)])
+    foreign = mix([(lin(d["basis"], -3, 1), 0.5),
+                   (lin(d["erp"], -2, 5), 0.5)])
+    retail = lin(d["up_ratio"], 5, 80)
+    volume = mix([(lin(d["amount"], 8000, 20000), 0.6),
+                  (lin(d["chg"], -30, 30), 0.4)])
+
+    dims, avail, capital = [], 0.0, 0.0
+    for (name, full), v in zip(SCORE_DIMS,
+                               (inst, hot, lead, foreign, retail, volume)):
+        if v is None:
+            dims.append((name, full, 0.0, False))
+            continue
+        got = full * v / 100.0
+        dims.append((name, full, got, True))
+        avail += full
+        capital += got
+
+    spread = d["up"] / d["down"] if (d["up"] and d["down"]) else None
+    veto = (d["lu"] is not None and d["lu"] < 40 and
+            spread is not None and spread < 0.3)
+    total = min(capital, 25.0 * avail / 100.0) if veto else capital
+    rate = total / avail * 100.0 if avail else 0.0
+    band = (("冰点", "#2e9e7b") if rate < 20 else
+            ("弱势", "#6fae7a") if rate < 40 else
+            ("均衡", "#f0a04b") if rate < 60 else
+            ("活跃", "#e8834f") if rate < 80 else ("过热", "#e05a4f"))
+    # 主导维度按对总分的绝对贡献取
+    top = max((x for x in dims if x[3]), key=lambda x: x[2], default=None)
+    guard = (d["weight_gap"] is not None and d["weight_gap"] > 1.5 and
+             in_ratio is not None and in_ratio < 0.3)
+    pattern = ("护盘市" if guard else
+               {"机构": "机构市", "游资": "题材市", "龙头主导": "龙头市",
+                "外资": "护盘市", "散户": "普涨市", "量能": "放量市"}.get(
+                    top[0] if top else "", "观望市"))
+    return {"dims": dims, "total": total, "capital": capital,
+            "avail": avail, "rate": rate, "veto": veto, "band": band,
+            "pattern": pattern, "lead": top[0] if top else "",
+            "lu": d["lu"], "spread": spread}
+
+
+def _score_bar_html(s):
+    """综合得分率条：分数 / 可用满分 / 档位线 / 一票否决。"""
+    rate, (bname, bcolor) = s["rate"], s["band"]
+    marks = "".join(
+        "<i style='position:absolute;left:{}%;top:0;bottom:0;width:1px;"
+        "background:#fff;opacity:.9'></i>".format(p)
+        for p in (20, 40, 60, 80))
+    ticks = "".join("<span>{}</span>".format(p) for p in (0, 20, 40, 60, 80, 100))
+    if s["veto"]:
+        vbadge = ("<span style='background:#fff1f0;color:#b23b32;border-radius:4px;"
+                  "padding:2px 7px;font-size:11px;font-weight:600'>一票否决</span>")
+        veto_line = ("<div style='margin-top:6px;background:#fff1f0;border:1px solid "
+                     "#ffd6d3;border-radius:5px;padding:4px 8px;font-size:11px;"
+                     "color:#b23b32'>一票否决：涨停 {:.0f} 家 &lt; 40 且 涨跌比 {:.2f} "
+                     "&lt; 0.3，得分封顶 25%</div>").format(
+                         s["lu"] or 0, s["spread"] or 0)
+    else:
+        vbadge, veto_line = "", ""
+    return ("<!--score-start--><div style='display:flex;gap:16px;align-items:center;"
+            "background:#fff;border:1px solid #e3e9f2;border-radius:10px;"
+            "padding:10px 14px;margin:0 0 10px;box-shadow:0 1px 3px rgba(30,60,100,.06)'>"
+            "<div style='flex:0 0 132px;text-align:center'>"
+            "<div style='font-size:30px;font-weight:700;line-height:1.1;color:{bc}'>"
+            "{rate:.1f}%</div><div style='font-size:11px;color:#6b7684;margin-top:2px'>"
+            "综合得分率</div><div style='font-size:10.5px;color:#8895a5'>"
+            "总分 {total:.2f} / {avail:.2f}</div></div>"
+            "<div style='flex:1;min-width:0'>"
+            "<div style='display:flex;gap:8px;align-items:center;margin-bottom:6px'>"
+            "<span style='background:{bc};color:#fff;border-radius:4px;padding:2px 7px;"
+            "font-size:11px;font-weight:600'>{bn}</span>{vbadge}"
+            "<span style='font-size:11px;color:#8895a5'>"
+            "六维加权 · 自有口径 · 规则演算，非建议</span></div>"
+            "<div style='position:relative;height:12px;background:#eef2f7;"
+            "border-radius:6px;overflow:hidden'>"
+            "<i style='display:block;height:100%;width:{rate:.1f}%;background:{bc}'>"
+            "</i>{marks}</div>"
+            "<div style='display:flex;justify-content:space-between;font-size:10px;"
+            "color:#8895a5;margin-top:3px'>{ticks}</div>{veto_line}"
+            "</div></div><!--score-end-->").format(
+                bc=bcolor, rate=rate, total=s["total"], avail=s["avail"],
+                bn=esc(bname), vbadge=vbadge, marks=marks, ticks=ticks,
+                veto_line=veto_line)
+
+
+def _radar_card(s):
+    """六维雷达：纯 SVG 自绘，每维标 得分/满分。"""
+    cx, cy, R = 180.0, 118.0, 84.0
+
+    def pt(i, r):
+        ux, uy = _RADAR_UNIT[i]
+        return cx + r * ux, cy + r * uy
+
+    p = ["<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 360 240' "
+         "width='100%' style='max-width:380px;margin:0 auto;display:block;"
+         "font-family:sans-serif'>"]
+    for frac in (0.25, 0.5, 0.75, 1.0):
+        pts = " ".join("{:.1f},{:.1f}".format(*pt(i, R * frac)) for i in range(6))
+        p.append("<polygon points='{}' fill='none' stroke='#e6ebf2' "
+                 "stroke-width='1'/>".format(pts))
+    for i in range(6):
+        x, y = pt(i, R)
+        p.append("<line x1='{:.1f}' y1='{:.1f}' x2='{:.1f}' y2='{:.1f}' "
+                 "stroke='#e6ebf2'/>".format(cx, cy, x, y))
+    ratios = [(got / full if full and ok else 0.0)
+              for _, full, got, ok in s["dims"]]
+    pts = " ".join("{:.1f},{:.1f}".format(*pt(i, R * max(0.04, r)))
+                   for i, r in enumerate(ratios))
+    p.append("<polygon points='{}' fill='rgba(240,160,75,.28)' "
+             "stroke='#f0a04b' stroke-width='2'/>".format(pts))
+    lead = s.get("lead", "")
+    for i, r in enumerate(ratios):
+        x, y = pt(i, R * max(0.04, r))
+        hot = s["dims"][i][0] == lead
+        p.append("<circle cx='{:.1f}' cy='{:.1f}' r='{}' fill='{}'/>".format(
+            x, y, 3.6 if hot else 2.6, "#e05a4f" if hot else "#f0a04b"))
+    for i, (name, full, got, ok) in enumerate(s["dims"]):
+        ux, uy = _RADAR_UNIT[i]
+        lx, ly = cx + (R + 20) * ux, cy + (R + 20) * uy
+        anchor = "start" if ux > 0.3 else ("end" if ux < -0.3 else "middle")
+        val = "{:.2f}/{:.0f}".format(got, full) if ok else "—"
+        hot = name == lead
+        p.append("<text x='{:.1f}' y='{:.1f}' font-size='10.5' fill='{}' "
+                 "font-weight='{}' text-anchor='{}'>{}</text>".format(
+                     lx, ly, "#e05a4f" if hot else "#33465c",
+                     600 if hot else 400, anchor, esc(name)))
+        p.append("<text x='{:.1f}' y='{:.1f}' font-size='10' fill='{}' "
+                 "font-weight='{}' text-anchor='{}'>{}</text>".format(
+                     lx, ly + 12, "#e05a4f" if hot else "#f0a04b",
+                     600 if hot else 400, anchor, val))
+    p.append("</svg>")
+    return ("<!--radar-start--><section class='card'>"
+            "<h4>资金势力 · 六维结构</h4><div class='chart'>{}</div>"
+            "<div style='font-size:11px;color:#6b7684;text-align:center;"
+            "margin-top:4px'>总分 {:.2f} · 格局 {} · "
+            "<b style='color:#e05a4f'>主导 {}</b></div>"
+            "</section><!--radar-end-->").format(
+                "".join(p), s["capital"], esc(s["pattern"]),
+                esc(s.get("lead", "") or "—"))
+
+
+def sync_score_widgets(html):
+    """已生成看板：按隐藏锚点重算并同步得分条与雷达卡（幂等）。"""
+    s = score_engine(_score_inputs(html))
+    bar, radar = _score_bar_html(s), _radar_card(s)
+    if "<!--score-start-->" in html:
+        html = re.sub(r"<!--score-start-->.*?<!--score-end-->",
+                      lambda _: bar, html, count=1, flags=re.S)
+    else:
+        html = re.sub(r"(<!--verdict-end-->)", lambda m: m.group(1) + bar,
+                      html, count=1)
+    if "<!--radar-start-->" in html:
+        html = re.sub(r"<!--radar-start-->.*?<!--radar-end-->",
+                      lambda _: radar, html, count=1, flags=re.S)
+    else:
+        html = re.sub(r"(<div class='dash'>)",
+                      lambda m: m.group(1) + radar, html, count=1)
+    return html
+
+
 def polish_dashboard(html):
     """只输出「结果可视化看板」：分析章节、论证文字、样本池图表全部删除。
 
-    页面只剩结论条 + 状态条 + 6 个 KPI + 8 张结果图，两屏内看完；点击卡片可放大。
-    hidden 区只留 send_mail.py 抽取邮件正文用的机器锚点（要点 / 结论首句 /
-    执行摘要表），不渲染，也不含分析步骤。已生成的看板只同步顶部结论条，保证幂等。
+    页面只剩结论条 + 综合得分率 + 状态条 + 6 个 KPI + 结果图，两屏内看完；
+    点击卡片可放大。hidden 区只留 send_mail.py 抽取邮件正文用的机器锚点，
+    不渲染，也不含分析步骤。已生成的看板只重算结论/评分，保证幂等。
     """
     if "<!--viz-start-->" in html:
-        return refresh_verdict(html)
+        return sync_score_widgets(refresh_verdict(html))
     mb = re.search(r"(<body[^>]*>)(.*)(</body>)", html, re.S)
     if not mb:
         return html
@@ -6755,7 +6996,8 @@ def polish_dashboard(html):
         return ("<section class='card'><h4>{}</h4>"
                 "<div class='chart'>{}</div></section>").format(title, inner)
 
-    cards = []
+    score = score_engine(_score_inputs(html))
+    cards = [_radar_card(score)]
     idx = [(r[0], _viz_num(r[2])) for r in _viz_rows(body, "1.1 指数概览")[1:]
            if len(r) > 2]
     idx = [(a, v) for a, v in idx if v is not None]
@@ -6812,7 +7054,8 @@ def polish_dashboard(html):
             cards.append(found[key])
 
     verdict = _verdict_html(_verdict_text(concl.group(0)))
-    viz = ("<!--viz-start--><h1>ETF 全景 · 结果看板</h1>" + verdict + status +
+    bar = _score_bar_html(score)
+    viz = ("<!--viz-start--><h1>ETF 全景 · 结果看板</h1>" + verdict + bar + status +
            "<div class='kpis'>" + kpis + "</div>" +
            "<div class='dash'>" + "".join(cards) + "</div><!--viz-end-->")
 
