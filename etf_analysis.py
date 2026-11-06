@@ -838,7 +838,18 @@ def fetch_global_online():
 
 
 def fetch_vix():
-    """抓 CBOE 恐慌指数 VIX（新浪行情 vix 代码，需 Referer）。失败返回 None。"""
+    """VIX：CBOE 官方延迟报价优先（新浪接口常返回空串），新浪兜底。"""
+    try:
+        req = Request(
+            "https://cdn.cboe.com/api/global/delayed_quotes/quotes/_VIX.json",
+            headers=dict(HEADERS, Referer="https://www.cboe.com/"))
+        with urlopen(req, timeout=12) as resp:
+            data = json.loads(resp.read().decode("utf-8", "ignore"))
+        v = num((data.get("data") or {}).get("current_price"))
+        if v is not None and v > 0:
+            return v
+    except Exception:
+        pass
     try:
         req = Request("https://hq.sinajs.cn/list=vix",
                       headers=dict(HEADERS, Referer="https://finance.sina.com.cn/"))
@@ -855,6 +866,53 @@ def fetch_vix():
     except Exception:
         return None
     return None
+
+
+def fetch_fear_greed():
+    """CNN Fear & Greed（美股口径第三方情绪）：返回 (读数, 昨收, 一周前)。
+
+    dataviz 网关对简陋 UA 返回 418，故用完整浏览器请求头；失败返回 None。
+    """
+    hdr = {
+        "User-Agent": ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                       "AppleWebKit/537.36 (KHTML, like Gecko) "
+                       "Chrome/126.0.0.0 Safari/537.36"),
+        "Accept": "application/json, text/plain, */*",
+        "Accept-Language": "en-US,en;q=0.9",
+        "Referer": "https://www.cnn.com/markets/fear-and-greed",
+        "Origin": "https://www.cnn.com",
+    }
+    try:
+        req = Request(
+            "https://production.dataviz.cnn.io/index/fearandgreed/graphdata",
+            headers=hdr)
+        with urlopen(req, timeout=12) as resp:
+            data = json.loads(resp.read().decode("utf-8", "ignore"))
+        fg = data.get("fear_and_greed") or {}
+        score = num(fg.get("score"))
+        if score is None or not 0 <= score <= 100:
+            return None
+        return (score, num(fg.get("previous_close")),
+                num(fg.get("previous_1_week")))
+    except Exception:
+        return None
+
+
+def fetch_rating_history(limit=60):
+    """近 N 日情绪轨迹：取派生库真实逐日上涨占比，按日期升序返回。"""
+    if not os.path.exists(SQLITE_FILE):
+        return []
+    import sqlite3
+    try:
+        con = sqlite3.connect(SQLITE_FILE)
+        rows = con.execute(
+            "SELECT report_date, value FROM breadth_metric "
+            "WHERE name='up_ratio' AND value IS NOT NULL "
+            "ORDER BY report_date DESC LIMIT ?", (limit,)).fetchall()
+        con.close()
+    except Exception:
+        return []
+    return [(d, float(v)) for d, v in reversed(rows)]
 
 
 def fetch_futures():
@@ -7292,6 +7350,44 @@ def extra_cards(html, k, intraday=None):
              "\u4e2d\u6027" if rate < 60 else "\u79ef\u6781" if rate < 80
              else "\u4ea2\u594b")
 
+    fg, fg_1w = ext["fg"], ext["fg_1w"]
+    # CNN 官方分档：0-24 极度恐惧 / 25-44 恐惧 / 45-55 中性 / 56-75 贪婪 / 76+ 极度贪婪
+    fg_tag = ("\u6781\u5ea6\u6050\u60e7" if fg is not None and fg < 25 else
+              "\u6050\u60e7" if fg is not None and fg < 45 else
+              "\u4e2d\u6027" if fg is not None and fg < 56 else
+              "\u8d2a\u5a6a" if fg is not None and fg < 76 else
+              "\u6781\u5ea6\u8d2a\u5a6a")
+    fg_val = ("{:.0f}/100 · {}".format(fg, fg_tag)
+              if fg is not None else "\u2014")
+    fg_note = (" · \u5468\u524d {:.0f}".format(fg_1w)
+               if fg_1w is not None else "")
+    hist = fetch_rating_history()
+
+    def _spark(vals, w=104, h=18):
+        if len(vals) < 2:
+            vals = vals * 2
+        lo, hi = min(vals), max(vals)
+        rng = (hi - lo) or 1.0
+        pts = " ".join("{:.1f},{:.1f}".format(
+            w * i / (len(vals) - 1), h - 2 - (v - lo) / rng * (h - 4))
+            for i, v in enumerate(vals))
+        return ("<svg width='{}' height='{}' viewBox='0 0 {} {}' "
+                "style='display:block;margin:3px 0 1px'>"
+                "<polyline points='{}' fill='none' stroke='#3b7dd8' "
+                "stroke-width='1.6' stroke-linejoin='round'/></svg>").format(
+                    w, h, w, h, pts)
+
+    hvals = [v for _, v in hist]
+    traj_rows = ([
+        _ov_kv("\u8fd1 {} \u65e5\u60c5\u7eea\u8f68\u8ff9".format(len(hvals)),
+               "{}% → {}%".format(round(hvals[0]), round(hvals[-1]))),
+        "<div style='font-size:9px;color:#a5b1bf'>" + _spark(hvals) +
+        "\u6d3e\u751f\u5e93\u9010\u65e5\u4e0a\u6da8\u5360\u6bd4</div>",
+    ] if hvals else [
+        _ov_kv("\u5f53\u65e5\u60c5\u7eea\u8f68\u8ff9",
+               "\u4e0a\u6da8\u5360\u6bd4 {}%".format(f0(up_ratio))),
+    ])
+
     cards = []
 
     pos = max(0.0, min(100.0, 100.0 * money / 15.0))
@@ -7328,11 +7424,11 @@ def extra_cards(html, k, intraday=None):
                if avoid is not None else "\u5f85\u8865"),
         _ov_kv("\u81ea\u7b97\u6050\u8d2a", "{}/100 · {}".format(sent, sent_tag)
                if sent is not None else "\u5f85\u8865"),
-        _ov_kv("\u97ed\u5708\u513f\u6050\u8d2a",
-               "\u5f85\u8865\uff08\u5916\u90e8\u6e90\uff09", "#a5b1bf"),
+        _ov_kv("\u5916\u56f4\u6050\u8d2a CNN", fg_val,
+               "#a5b1bf" if fg is None else "#33465c"),
         _ov_kv("\u77ed\u671f\u8fc7\u70ed\u5224\u5b9a", band),
         _ov_kv("VIX", "{:.2f}".format(ext["vix"])
-               if ext["vix"] is not None else "\u672a\u91c7\u96c6"),
+               if ext["vix"] is not None else "\u2014"),
     ])
     col_s = _ov_col("\u4fe1\u53f7 / \u5207\u5206", "#b26a00", [
         _ov_kv("\u8001\u8f68\u4ef2\u88c1\u4ed3\u4f4d",
@@ -7352,16 +7448,15 @@ def extra_cards(html, k, intraday=None):
                  "<div style='display:flex;gap:14px'>" + col_e + col_s +
                  "</div><div style='font-size:9.5px;color:#a5b1bf;"
                  "margin-top:3px'>\u907f\u9669/\u6050\u614c\u7b2c\u4e09\u89c6\u89d2 · "
-                 "\u72ec\u7acb\u53c2\u8003</div></section>")
+                 "CNN \u7f8e\u80a1\u6050\u8d2a / CBOE VIX" + fg_note +
+                 " · \u72ec\u7acb\u53c2\u8003</div></section>")
 
     rate_col = _ov_col("\u5927\u76d8\u8bc4\u7ea7", "#25599b", [
         _ov_kv("\u5f53\u65e5\u8bc4\u7ea7", "{} · {}".format(grade, band)),
         _ov_kv("\u5f97\u5206\u7387", "{:.1f}%".format(rate)),
         _ov_kv("\u5426\u51b3\u9879", "\u89e6\u53d1" if veto else "\u65e0"),
         _ov_kv("\u4e3b\u5bfc\u7ef4\u5ea6", s["lead"] or "\u2014"),
-        _ov_kv("\u8fd160\u65e5\u8bc4\u7ea7\u8f68\u8ff9",
-               "\u5f85\u8865\uff08\u9700\u5386\u53f2\uff09", "#a5b1bf"),
-    ])
+    ] + traj_rows)
     pos_col = _ov_col("\u4ed3\u4f4d\u914d\u6bd4\u53c2\u8003", "#b26a00", [
         _ov_kv("\u957f\u7ebf · \u5e95\u4ed3", "{}%".format(base)),
         _ov_kv("\u77ed\u7ebf · \u673a\u52a8", "{}%".format(short)),
@@ -7442,7 +7537,11 @@ def extra_cards(html, k, intraday=None):
          "{} \u4e2a".format(len(ext["indices"]))),
         ("VIX", ext["vix"] is not None,
          "{:.2f}".format(ext["vix"]) if ext["vix"] is not None
-         else "\u672a\u91c7\u96c6"),
+         else "\u2014"),
+        ("\u5916\u56f4\u6050\u8d2a\uff08CNN\uff09", fg is not None,
+         "{:.0f}/100".format(fg) if fg is not None else "\u2014"),
+        ("\u60c5\u7eea\u8f68\u8ff9\uff08\u6d3e\u751f\u5e93\uff09", bool(hvals),
+         "{} \u65e5".format(len(hvals)) if hvals else "\u5f53\u65e5"),
         ("\u671f\u6307\u57fa\u5dee", bool(k["basis"]),
          "{} \u5408\u7ea6".format(len(k["basis"]))),
         ("\u6210\u4ea4\u989d TOP20", bool(t20rows),
@@ -7677,11 +7776,9 @@ def _radar_card(s):
     return ("<!--radar-start--><section class='card'>"
             "<h4>资金势力 · 五维结构</h4><div class='chart'>{}</div>"
             "<div style='font-size:11px;color:#6b7684;text-align:center;"
-            "margin-top:4px'>总分 {:.2f} · 格局 {} · "
-            "<b style='color:#e05a4f'>主导 {}</b></div>"
+            "margin-top:4px'>格局 {}</div>"
             "</section><!--radar-end-->").format(
-                "".join(p), s["capital"], esc(s["pattern"]),
-                esc(s.get("lead", "") or "—"))
+                "".join(p), esc(s["pattern"]))
 
 
 def sync_score_widgets(html):
@@ -7724,7 +7821,20 @@ def _gather_external(html):
             v = _viz_num(r[3])
             if v is not None:
                 indices.append((r[0], v))
-    return {"indices": indices, "vix": fetch_vix()}
+    return {"indices": indices, "vix": fetch_vix(),
+            "fg": fetch_fear_greed()}
+
+
+def _fg_bits(fg):
+    """把外围恐贪读数序列化为 extdata 字段（缺失字段跳过）。"""
+    if not fg:
+        return []
+    bits = ["FG:{:.2f}".format(fg[0])]
+    if fg[1] is not None:
+        bits.append("FG1D:{:.2f}".format(fg[1]))
+    if fg[2] is not None:
+        bits.append("FG1W:{:.2f}".format(fg[2]))
+    return bits
 
 
 def _ext_html(ext):
@@ -7734,16 +7844,18 @@ def _ext_html(ext):
                                             for n, v in ext["indices"]))
     if ext["vix"] is not None:
         parts.append("VIX:{:.2f}".format(ext["vix"]))
+    parts += _fg_bits(ext.get("fg"))
     return "<div class='extdata' hidden>" + " ".join(parts) + "</div>"
 
 
 def _parse_external(html):
     m = re.search(r"<div class='extdata' hidden>(.*?)</div>", html, re.S)
     if not m:
-        return {"indices": [], "vix": None}
+        return {"indices": [], "vix": None, "fg": None,
+                "fg_1d": None, "fg_1w": None}
     t = re.sub(r"<[^>]+>", " ", m.group(1))
-    indices, vix = [], None
-    gm = re.search(r"外围指数:(.*?)(?:VIX:|$)", t, re.S)
+    indices = []
+    gm = re.search(r"外围指数:(.*?)(?:VIX:|FG:|$)", t, re.S)
     if gm:
         for kv in gm.group(1).split():
             if ":" in kv:
@@ -7751,20 +7863,47 @@ def _parse_external(html):
                 vv = _viz_num(v)
                 if vv is not None:
                     indices.append((n, vv))
-    gv = re.search(r"VIX:([+\-]?[\d.]+)", t)
-    if gv:
-        vix = float(gv.group(1))
-    return {"indices": indices, "vix": vix}
+
+    def g(key):
+        mm = re.search(key + r":([+\-]?[\d.]+)", t)
+        return float(mm.group(1)) if mm else None
+
+    return {"indices": indices, "vix": g("VIX"), "fg": g("FG"),
+            "fg_1d": g("FG1D"), "fg_1w": g("FG1W")}
 
 
 def sync_external(html, report_html):
-    """一次性：把完整报告的外围指数 + 实时 VIX 注入精简页，供 ④ 评估。"""
+    """一次性：把完整报告的外围指数 + VIX + 外围恐贪注入精简页。"""
     if "extdata" in html:
         return html
     ext = _gather_external(report_html or html)
-    if not ext["indices"] and ext["vix"] is None:
+    if not ext["indices"] and ext["vix"] is None and not ext.get("fg"):
         return html
     return html.replace("</body>", _ext_html(ext) + "</body>", 1)
+
+
+def sync_vix(html):
+    """已生成页面 extdata 缺 VIX 时用 CBOE 补采写回（幂等）。"""
+    m = re.search(r"<div class='extdata' hidden>(.*?)</div>", html, re.S)
+    if not m or re.search(r"VIX:[+\-]?[\d.]+", m.group(1)):
+        return html
+    v = fetch_vix()
+    if v is None:
+        return html
+    block = m.group(1).rstrip() + " VIX:{:.2f}".format(v)
+    return html[:m.start(1)] + block + html[m.end(1):]
+
+
+def sync_fg(html):
+    """已生成页面 extdata 缺外围恐贪时用 CNN 补采写回（幂等）。"""
+    m = re.search(r"<div class='extdata' hidden>(.*?)</div>", html, re.S)
+    if not m or re.search(r"FG:[+\-]?[\d.]+", m.group(1)):
+        return html
+    bits = _fg_bits(fetch_fear_greed())
+    if not bits:
+        return html
+    block = m.group(1).rstrip() + " " + " ".join(bits)
+    return html[:m.start(1)] + block + html[m.end(1):]
 
 
 def board_panels(html):
@@ -8001,10 +8140,19 @@ def polish_dashboard(html):
     不渲染，也不含分析步骤。已生成的看板只重算结论/评分，保证幂等。
     """
     if "<!--viz-start-->" in html:
-        return sync_amount_note(sync_drop_cards(sync_pair_pos(sync_dash_css(
-            sync_panels_pos(sync_panels(sync_overview(sync_rotation(
-                sync_score_widgets(sync_top20(
-                    refresh_verdict(html)))))))))))
+        html = refresh_verdict(html)
+        html = sync_vix(html)
+        html = sync_fg(html)
+        html = sync_top20(html)
+        html = sync_score_widgets(html)
+        html = sync_rotation(html)
+        html = sync_overview(html)
+        html = sync_panels(html)
+        html = sync_panels_pos(html)
+        html = sync_dash_css(html)
+        html = sync_pair_pos(html)
+        html = sync_drop_cards(html)
+        return sync_amount_note(html)
     mb = re.search(r"(<body[^>]*>)(.*)(</body>)", html, re.S)
     if not mb:
         return html
@@ -8115,15 +8263,15 @@ def polish_dashboard(html):
         cards.append(_rotation_card(ins, outs))
     k = _gather_kdata(html)
     kd = _kdata_html(k)
-    ovh, ovt = overview_blocks(html, k, intraday)
+    ext = _gather_external(html)
+    ext_html = _ext_html(ext)
+    html_ext = html.replace("</body>", ext_html + "</body>", 1) if ext_html else html
+    ovh, ovt = overview_blocks(html_ext, k, intraday)
     cards.insert(0, ovh)
     cards.append(ovt)
 
     verdict = _verdict_html(_verdict_text(concl.group(0)))
     bar = _score_bar_html(score)
-    ext = _gather_external(html)
-    ext_html = _ext_html(ext)
-    html_ext = html.replace("</body>", ext_html + "</body>", 1) if ext_html else html
     panels = board_panels(html_ext)
     cards.insert(1, "<div style='grid-column:1/-1'>" + panels + "</div>")
     front = [c for c in cards if ("<!--radar-start-->" in c or
