@@ -1,29 +1,29 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 300" width="100%" style="max-width:760px;font-family:'WenQuanYi Micro Hei',sans-serif">
 <rect width="760" height="300" fill="#ffffff"/>
 <text x="64" y="26" font-size="15" font-weight="600" fill="#222">行业主力净流入 Top（亿元）</text>
-<line x1="64" y1="224.6451612903226" x2="742" y2="224.6451612903226" stroke="#d8dee6" stroke-width="1"/>
-<rect x="77.6" y="63.4" width="57.6" height="161.3" rx="2" fill="#e05a4f"><title>电力：+9</title></rect>
-<text x="106.4" y="58.4" font-size="10.5" fill="#444" text-anchor="middle">+9</text>
-<text x="106.4" y="262.0" font-size="10" fill="#555" text-anchor="middle">电力</text>
-<rect x="162.3" y="136.6" width="57.6" height="88.1" rx="2" fill="#e05a4f"><title>国有大型银：+5</title></rect>
-<text x="191.1" y="131.6" font-size="10.5" fill="#444" text-anchor="middle">+5</text>
-<text x="191.1" y="262.0" font-size="10" fill="#555" text-anchor="middle">国有大型银</text>
-<rect x="247.1" y="142.8" width="57.6" height="81.9" rx="2" fill="#e05a4f"><title>铁路公路：+5</title></rect>
-<text x="275.9" y="137.8" font-size="10.5" fill="#444" text-anchor="middle">+5</text>
-<text x="275.9" y="262.0" font-size="10" fill="#555" text-anchor="middle">铁路公路</text>
-<rect x="331.8" y="163.2" width="57.6" height="61.5" rx="2" fill="#e05a4f"><title>城商行Ⅱ：+4</title></rect>
-<text x="360.6" y="158.2" font-size="10.5" fill="#444" text-anchor="middle">+4</text>
-<text x="360.6" y="262.0" font-size="10" fill="#555" text-anchor="middle">城商行Ⅱ</text>
-<rect x="416.6" y="170.1" width="57.6" height="54.6" rx="2" fill="#e05a4f"><title>个护用品：+3</title></rect>
-<text x="445.4" y="165.1" font-size="10.5" fill="#444" text-anchor="middle">+3</text>
-<text x="445.4" y="262.0" font-size="10" fill="#555" text-anchor="middle">个护用品</text>
-<rect x="501.3" y="175.7" width="57.6" height="49.0" rx="2" fill="#e05a4f"><title>种植业：+3</title></rect>
-<text x="530.1" y="170.7" font-size="10.5" fill="#444" text-anchor="middle">+3</text>
-<text x="530.1" y="262.0" font-size="10" fill="#555" text-anchor="middle">种植业</text>
-<rect x="586.1" y="187.0" width="57.6" height="37.6" rx="2" fill="#e05a4f"><title>通信服务：+2</title></rect>
-<text x="614.9" y="182.0" font-size="10.5" fill="#444" text-anchor="middle">+2</text>
-<text x="614.9" y="262.0" font-size="10" fill="#555" text-anchor="middle">通信服务</text>
-<rect x="670.8" y="191.7" width="57.6" height="33.0" rx="2" fill="#e05a4f"><title>轨交设备Ⅱ：+2</title></rect>
-<text x="699.6" y="186.7" font-size="10.5" fill="#444" text-anchor="middle">+2</text>
-<text x="699.6" y="262.0" font-size="10" fill="#555" text-anchor="middle">轨交设备Ⅱ</text>
+<line x1="64" y1="224.64516129032262" x2="742" y2="224.64516129032262" stroke="#d8dee6" stroke-width="1"/>
+<rect x="77.6" y="63.4" width="57.6" height="161.3" rx="2" fill="#e05a4f"><title>元件：+38</title></rect>
+<text x="106.4" y="58.4" font-size="10.5" fill="#444" text-anchor="middle">+38</text>
+<text x="106.4" y="262.0" font-size="10" fill="#555" text-anchor="middle">元件</text>
+<rect x="162.3" y="67.4" width="57.6" height="157.3" rx="2" fill="#e05a4f"><title>通信设备：+37</title></rect>
+<text x="191.1" y="62.4" font-size="10.5" fill="#444" text-anchor="middle">+37</text>
+<text x="191.1" y="262.0" font-size="10" fill="#555" text-anchor="middle">通信设备</text>
+<rect x="247.1" y="111.7" width="57.6" height="112.9" rx="2" fill="#e05a4f"><title>消费电子：+26</title></rect>
+<text x="275.9" y="106.7" font-size="10.5" fill="#444" text-anchor="middle">+26</text>
+<text x="275.9" y="262.0" font-size="10" fill="#555" text-anchor="middle">消费电子</text>
+<rect x="331.8" y="130.0" width="57.6" height="94.7" rx="2" fill="#e05a4f"><title>半导体：+22</title></rect>
+<text x="360.6" y="125.0" font-size="10.5" fill="#444" text-anchor="middle">+22</text>
+<text x="360.6" y="262.0" font-size="10" fill="#555" text-anchor="middle">半导体</text>
+<rect x="416.6" y="139.4" width="57.6" height="85.2" rx="2" fill="#e05a4f"><title>通用设备：+20</title></rect>
+<text x="445.4" y="134.4" font-size="10.5" fill="#444" text-anchor="middle">+20</text>
+<text x="445.4" y="262.0" font-size="10" fill="#555" text-anchor="middle">通用设备</text>
+<rect x="501.3" y="171.5" width="57.6" height="53.1" rx="2" fill="#e05a4f"><title>汽车零部件：+12</title></rect>
+<text x="530.1" y="166.5" font-size="10.5" fill="#444" text-anchor="middle">+12</text>
+<text x="530.1" y="262.0" font-size="10" fill="#555" text-anchor="middle">汽车零部件</text>
+<rect x="586.1" y="195.8" width="57.6" height="28.8" rx="2" fill="#e05a4f"><title>煤炭开采：+7</title></rect>
+<text x="614.9" y="190.8" font-size="10.5" fill="#444" text-anchor="middle">+7</text>
+<text x="614.9" y="262.0" font-size="10" fill="#555" text-anchor="middle">煤炭开采</text>
+<rect x="670.8" y="196.3" width="57.6" height="28.3" rx="2" fill="#e05a4f"><title>航天装备Ⅱ：+7</title></rect>
+<text x="699.6" y="191.3" font-size="10.5" fill="#444" text-anchor="middle">+7</text>
+<text x="699.6" y="262.0" font-size="10" fill="#555" text-anchor="middle">航天装备Ⅱ</text>
 </svg>
