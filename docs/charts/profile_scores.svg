@@ -11,8 +11,8 @@
 <rect x="226.7" y="184.3" width="51.2" height="59.7" rx="2" fill="#e05a4f"><title>量能：2</title></rect>
 <text x="252.3" y="179.3" font-size="10.5" fill="#444" text-anchor="middle">2</text>
 <text x="252.3" y="262.0" font-size="10" fill="#555" text-anchor="middle">量能</text>
-<rect x="302.1" y="184.3" width="51.2" height="59.7" rx="2" fill="#e05a4f"><title>个股宽度：2</title></rect>
-<text x="327.7" y="179.3" font-size="10.5" fill="#444" text-anchor="middle">2</text>
+<rect x="302.1" y="63.4" width="51.2" height="180.6" rx="2" fill="#e05a4f"><title>个股宽度：5</title></rect>
+<text x="327.7" y="58.4" font-size="10.5" fill="#444" text-anchor="middle">5</text>
 <text x="327.7" y="262.0" font-size="10" fill="#555" text-anchor="middle">个股宽度</text>
 <rect x="377.4" y="144.0" width="51.2" height="100.0" rx="2" fill="#e05a4f"><title>估值：3</title></rect>
 <text x="403.0" y="139.0" font-size="10.5" fill="#444" text-anchor="middle">3</text>
@@ -20,8 +20,8 @@
 <rect x="452.7" y="144.0" width="51.2" height="100.0" rx="2" fill="#e05a4f"><title>风格轮动：3</title></rect>
 <text x="478.3" y="139.0" font-size="10.5" fill="#444" text-anchor="middle">3</text>
 <text x="478.3" y="262.0" font-size="10" fill="#555" text-anchor="middle">风格轮动</text>
-<rect x="528.1" y="103.7" width="51.2" height="140.3" rx="2" fill="#e05a4f"><title>行业轮动：4</title></rect>
-<text x="553.7" y="98.7" font-size="10.5" fill="#444" text-anchor="middle">4</text>
+<rect x="528.1" y="63.4" width="51.2" height="180.6" rx="2" fill="#e05a4f"><title>行业轮动：5</title></rect>
+<text x="553.7" y="58.4" font-size="10.5" fill="#444" text-anchor="middle">5</text>
 <text x="553.7" y="262.0" font-size="10" fill="#555" text-anchor="middle">行业轮动</text>
 <rect x="603.4" y="144.0" width="51.2" height="100.0" rx="2" fill="#e05a4f"><title>板块宽度：3</title></rect>
 <text x="629.0" y="139.0" font-size="10.5" fill="#444" text-anchor="middle">3</text>
