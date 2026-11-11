@@ -1,29 +1,29 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 300" width="100%" style="max-width:760px;font-family:'WenQuanYi Micro Hei',sans-serif">
 <rect width="760" height="300" fill="#ffffff"/>
 <text x="64" y="26" font-size="15" font-weight="600" fill="#222">行业主力净流入 Top（亿元）</text>
-<line x1="64" y1="224.64516129032256" x2="742" y2="224.64516129032256" stroke="#d8dee6" stroke-width="1"/>
-<rect x="77.6" y="63.4" width="57.6" height="161.3" rx="2" fill="#e05a4f"><title>半导体：+41</title></rect>
-<text x="106.4" y="58.4" font-size="10.5" fill="#444" text-anchor="middle">+41</text>
-<text x="106.4" y="262.0" font-size="10" fill="#555" text-anchor="middle">半导体</text>
-<rect x="162.3" y="100.0" width="57.6" height="124.6" rx="2" fill="#e05a4f"><title>通信设备：+32</title></rect>
-<text x="191.1" y="95.0" font-size="10.5" fill="#444" text-anchor="middle">+32</text>
-<text x="191.1" y="262.0" font-size="10" fill="#555" text-anchor="middle">通信设备</text>
-<rect x="247.1" y="134.7" width="57.6" height="89.9" rx="2" fill="#e05a4f"><title>消费电子：+23</title></rect>
-<text x="275.9" y="129.7" font-size="10.5" fill="#444" text-anchor="middle">+23</text>
-<text x="275.9" y="262.0" font-size="10" fill="#555" text-anchor="middle">消费电子</text>
-<rect x="331.8" y="154.0" width="57.6" height="70.7" rx="2" fill="#e05a4f"><title>汽车零部件：+18</title></rect>
-<text x="360.6" y="149.0" font-size="10.5" fill="#444" text-anchor="middle">+18</text>
-<text x="360.6" y="262.0" font-size="10" fill="#555" text-anchor="middle">汽车零部件</text>
-<rect x="416.6" y="166.8" width="57.6" height="57.9" rx="2" fill="#e05a4f"><title>影视院线：+15</title></rect>
-<text x="445.4" y="161.8" font-size="10.5" fill="#444" text-anchor="middle">+15</text>
-<text x="445.4" y="262.0" font-size="10" fill="#555" text-anchor="middle">影视院线</text>
-<rect x="501.3" y="170.8" width="57.6" height="53.9" rx="2" fill="#e05a4f"><title>广告营销：+14</title></rect>
-<text x="530.1" y="165.8" font-size="10.5" fill="#444" text-anchor="middle">+14</text>
-<text x="530.1" y="262.0" font-size="10" fill="#555" text-anchor="middle">广告营销</text>
-<rect x="586.1" y="177.1" width="57.6" height="47.5" rx="2" fill="#e05a4f"><title>元件：+12</title></rect>
-<text x="614.9" y="172.1" font-size="10.5" fill="#444" text-anchor="middle">+12</text>
-<text x="614.9" y="262.0" font-size="10" fill="#555" text-anchor="middle">元件</text>
-<rect x="670.8" y="179.0" width="57.6" height="45.6" rx="2" fill="#e05a4f"><title>通用设备：+12</title></rect>
-<text x="699.6" y="174.0" font-size="10.5" fill="#444" text-anchor="middle">+12</text>
-<text x="699.6" y="262.0" font-size="10" fill="#555" text-anchor="middle">通用设备</text>
+<line x1="64" y1="224.6451612903226" x2="742" y2="224.6451612903226" stroke="#d8dee6" stroke-width="1"/>
+<rect x="77.6" y="63.4" width="57.6" height="161.3" rx="2" fill="#e05a4f"><title>通信设备：+130</title></rect>
+<text x="106.4" y="58.4" font-size="10.5" fill="#444" text-anchor="middle">+130</text>
+<text x="106.4" y="262.0" font-size="10" fill="#555" text-anchor="middle">通信设备</text>
+<rect x="162.3" y="123.9" width="57.6" height="100.8" rx="2" fill="#e05a4f"><title>元件：+81</title></rect>
+<text x="191.1" y="118.9" font-size="10.5" fill="#444" text-anchor="middle">+81</text>
+<text x="191.1" y="262.0" font-size="10" fill="#555" text-anchor="middle">元件</text>
+<rect x="247.1" y="129.5" width="57.6" height="95.2" rx="2" fill="#e05a4f"><title>半导体：+77</title></rect>
+<text x="275.9" y="124.5" font-size="10.5" fill="#444" text-anchor="middle">+77</text>
+<text x="275.9" y="262.0" font-size="10" fill="#555" text-anchor="middle">半导体</text>
+<rect x="331.8" y="203.2" width="57.6" height="21.5" rx="2" fill="#e05a4f"><title>自动化设备：+17</title></rect>
+<text x="360.6" y="198.2" font-size="10.5" fill="#444" text-anchor="middle">+17</text>
+<text x="360.6" y="262.0" font-size="10" fill="#555" text-anchor="middle">自动化设备</text>
+<rect x="416.6" y="203.9" width="57.6" height="20.7" rx="2" fill="#e05a4f"><title>汽车零部件：+17</title></rect>
+<text x="445.4" y="198.9" font-size="10.5" fill="#444" text-anchor="middle">+17</text>
+<text x="445.4" y="262.0" font-size="10" fill="#555" text-anchor="middle">汽车零部件</text>
+<rect x="501.3" y="208.5" width="57.6" height="16.1" rx="2" fill="#e05a4f"><title>专用设备：+13</title></rect>
+<text x="530.1" y="203.5" font-size="10.5" fill="#444" text-anchor="middle">+13</text>
+<text x="530.1" y="262.0" font-size="10" fill="#555" text-anchor="middle">专用设备</text>
+<rect x="586.1" y="208.8" width="57.6" height="15.9" rx="2" fill="#e05a4f"><title>通用设备：+13</title></rect>
+<text x="614.9" y="203.8" font-size="10.5" fill="#444" text-anchor="middle">+13</text>
+<text x="614.9" y="262.0" font-size="10" fill="#555" text-anchor="middle">通用设备</text>
+<rect x="670.8" y="211.6" width="57.6" height="13.0" rx="2" fill="#e05a4f"><title>消费电子：+10</title></rect>
+<text x="699.6" y="206.6" font-size="10.5" fill="#444" text-anchor="middle">+10</text>
+<text x="699.6" y="262.0" font-size="10" fill="#555" text-anchor="middle">消费电子</text>
 </svg>
