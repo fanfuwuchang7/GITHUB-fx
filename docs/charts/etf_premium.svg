@@ -2,28 +2,28 @@
 <rect width="760" height="300" fill="#ffffff"/>
 <text x="64" y="26" font-size="15" font-weight="600" fill="#222">样本ETF折溢价 Top（%）</text>
 <line x1="64" y1="224.64516129032256" x2="742" y2="224.64516129032256" stroke="#d8dee6" stroke-width="1"/>
-<rect x="77.6" y="63.4" width="57.6" height="161.3" rx="2" fill="#e05a4f"><title>恒生科技ET：+0.32</title></rect>
-<text x="106.4" y="58.4" font-size="10.5" fill="#444" text-anchor="middle">+0.32</text>
-<text x="106.4" y="262.0" font-size="10" fill="#555" text-anchor="middle">恒生科技ET</text>
-<rect x="162.3" y="68.4" width="57.6" height="156.2" rx="2" fill="#e05a4f"><title>通信ETF国：+0.31</title></rect>
-<text x="191.1" y="63.4" font-size="10.5" fill="#444" text-anchor="middle">+0.31</text>
-<text x="191.1" y="262.0" font-size="10" fill="#555" text-anchor="middle">通信ETF国</text>
-<rect x="247.1" y="68.4" width="57.6" height="156.2" rx="2" fill="#e05a4f"><title>计算机ETF：+0.31</title></rect>
-<text x="275.9" y="63.4" font-size="10.5" fill="#444" text-anchor="middle">+0.31</text>
-<text x="275.9" y="262.0" font-size="10" fill="#555" text-anchor="middle">计算机ETF</text>
-<rect x="331.8" y="83.5" width="57.6" height="141.1" rx="2" fill="#e05a4f"><title>新能源ETF：+0.28</title></rect>
-<text x="360.6" y="78.5" font-size="10.5" fill="#444" text-anchor="middle">+0.28</text>
-<text x="360.6" y="262.0" font-size="10" fill="#555" text-anchor="middle">新能源ETF</text>
-<rect x="416.6" y="88.6" width="57.6" height="136.1" rx="2" fill="#e05a4f"><title>深证100E：+0.27</title></rect>
-<text x="445.4" y="83.6" font-size="10.5" fill="#444" text-anchor="middle">+0.27</text>
-<text x="445.4" y="262.0" font-size="10" fill="#555" text-anchor="middle">深证100E</text>
-<rect x="501.3" y="88.6" width="57.6" height="136.1" rx="2" fill="#e05a4f"><title>科技ETF华：+0.27</title></rect>
-<text x="530.1" y="83.6" font-size="10.5" fill="#444" text-anchor="middle">+0.27</text>
-<text x="530.1" y="262.0" font-size="10" fill="#555" text-anchor="middle">科技ETF华</text>
-<rect x="586.1" y="88.6" width="57.6" height="136.1" rx="2" fill="#e05a4f"><title>游戏ETF华：+0.27</title></rect>
-<text x="614.9" y="83.6" font-size="10.5" fill="#444" text-anchor="middle">+0.27</text>
-<text x="614.9" y="262.0" font-size="10" fill="#555" text-anchor="middle">游戏ETF华</text>
-<rect x="670.8" y="118.8" width="57.6" height="105.8" rx="2" fill="#e05a4f"><title>光伏ETF华：+0.21</title></rect>
-<text x="699.6" y="113.8" font-size="10.5" fill="#444" text-anchor="middle">+0.21</text>
-<text x="699.6" y="262.0" font-size="10" fill="#555" text-anchor="middle">光伏ETF华</text>
+<rect x="77.6" y="63.4" width="57.6" height="161.3" rx="2" fill="#e05a4f"><title>光伏ETF华：+0.28</title></rect>
+<text x="106.4" y="58.4" font-size="10.5" fill="#444" text-anchor="middle">+0.28</text>
+<text x="106.4" y="262.0" font-size="10" fill="#555" text-anchor="middle">光伏ETF华</text>
+<rect x="162.3" y="144.0" width="57.6" height="80.6" rx="2" fill="#e05a4f"><title>新能源ETF：+0.14</title></rect>
+<text x="191.1" y="139.0" font-size="10.5" fill="#444" text-anchor="middle">+0.14</text>
+<text x="191.1" y="262.0" font-size="10" fill="#555" text-anchor="middle">新能源ETF</text>
+<rect x="247.1" y="155.5" width="57.6" height="69.1" rx="2" fill="#e05a4f"><title>酒ETF鹏华：+0.12</title></rect>
+<text x="275.9" y="150.5" font-size="10.5" fill="#444" text-anchor="middle">+0.12</text>
+<text x="275.9" y="262.0" font-size="10" fill="#555" text-anchor="middle">酒ETF鹏华</text>
+<rect x="331.8" y="167.0" width="57.6" height="57.6" rx="2" fill="#e05a4f"><title>煤炭ETF国：+0.10</title></rect>
+<text x="360.6" y="162.0" font-size="10.5" fill="#444" text-anchor="middle">+0.10</text>
+<text x="360.6" y="262.0" font-size="10" fill="#555" text-anchor="middle">煤炭ETF国</text>
+<rect x="416.6" y="178.6" width="57.6" height="46.1" rx="2" fill="#e05a4f"><title>黄金ETF华：+0.08</title></rect>
+<text x="445.4" y="173.6" font-size="10.5" fill="#444" text-anchor="middle">+0.08</text>
+<text x="445.4" y="262.0" font-size="10" fill="#555" text-anchor="middle">黄金ETF华</text>
+<rect x="501.3" y="190.1" width="57.6" height="34.6" rx="2" fill="#e05a4f"><title>军工ETF国：+0.06</title></rect>
+<text x="530.1" y="185.1" font-size="10.5" fill="#444" text-anchor="middle">+0.06</text>
+<text x="530.1" y="262.0" font-size="10" fill="#555" text-anchor="middle">军工ETF国</text>
+<rect x="586.1" y="195.8" width="57.6" height="28.8" rx="2" fill="#e05a4f"><title>新能源车ET：+0.05</title></rect>
+<text x="614.9" y="190.8" font-size="10.5" fill="#444" text-anchor="middle">+0.05</text>
+<text x="614.9" y="262.0" font-size="10" fill="#555" text-anchor="middle">新能源车ET</text>
+<rect x="670.8" y="201.6" width="57.6" height="23.0" rx="2" fill="#e05a4f"><title>A500ET：+0.04</title></rect>
+<text x="699.6" y="196.6" font-size="10.5" fill="#444" text-anchor="middle">+0.04</text>
+<text x="699.6" y="262.0" font-size="10" fill="#555" text-anchor="middle">A500ET</text>
 </svg>
