@@ -1,38 +1,38 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 300" width="100%" style="max-width:760px;font-family:'WenQuanYi Micro Hei',sans-serif">
 <rect width="760" height="300" fill="#ffffff"/>
 <text x="64" y="26" font-size="15" font-weight="600" fill="#222">全市场涨跌幅区间分布（家数，负值为下跌）</text>
-<line x1="64" y1="95.2802352284678" x2="742" y2="95.2802352284678" stroke="#d8dee6" stroke-width="1"/>
-<rect x="73.9" y="93.3" width="41.9" height="2.0" rx="2" fill="#e05a4f"><title>涨停：37</title></rect>
-<text x="94.8" y="88.3" font-size="10.5" fill="#444" text-anchor="middle">37</text>
+<line x1="64" y1="92.4742162233122" x2="742" y2="92.4742162233122" stroke="#d8dee6" stroke-width="1"/>
+<rect x="73.9" y="90.2" width="41.9" height="2.3" rx="2" fill="#e05a4f"><title>涨停：38</title></rect>
+<text x="94.8" y="85.2" font-size="10.5" fill="#444" text-anchor="middle">38</text>
 <text x="94.8" y="262.0" font-size="10" fill="#555" text-anchor="middle">涨停</text>
-<rect x="135.5" y="93.6" width="41.9" height="1.7" rx="2" fill="#e05a4f"><title>&gt;7%：31</title></rect>
-<text x="156.5" y="88.6" font-size="10.5" fill="#444" text-anchor="middle">31</text>
+<rect x="135.5" y="91.1" width="41.9" height="1.4" rx="2" fill="#e05a4f"><title>&gt;7%：23</title></rect>
+<text x="156.5" y="86.1" font-size="10.5" fill="#444" text-anchor="middle">23</text>
 <text x="156.5" y="262.0" font-size="10" fill="#555" text-anchor="middle">&gt;7%</text>
-<rect x="197.1" y="93.1" width="41.9" height="2.2" rx="2" fill="#e05a4f"><title>7~5%：41</title></rect>
-<text x="218.1" y="88.1" font-size="10.5" fill="#444" text-anchor="middle">41</text>
+<rect x="197.1" y="90.5" width="41.9" height="2.0" rx="2" fill="#e05a4f"><title>7~5%：33</title></rect>
+<text x="218.1" y="85.5" font-size="10.5" fill="#444" text-anchor="middle">33</text>
 <text x="218.1" y="262.0" font-size="10" fill="#555" text-anchor="middle">7~5%</text>
-<rect x="258.8" y="86.1" width="41.9" height="9.2" rx="2" fill="#e05a4f"><title>5~2%：171</title></rect>
-<text x="279.7" y="81.1" font-size="10.5" fill="#444" text-anchor="middle">171</text>
+<rect x="258.8" y="81.6" width="41.9" height="10.9" rx="2" fill="#e05a4f"><title>5~2%：183</title></rect>
+<text x="279.7" y="76.6" font-size="10.5" fill="#444" text-anchor="middle">183</text>
 <text x="279.7" y="262.0" font-size="10" fill="#555" text-anchor="middle">5~2%</text>
-<rect x="320.4" y="63.4" width="41.9" height="31.9" rx="2" fill="#e05a4f"><title>2~0%：595</title></rect>
-<text x="341.4" y="58.4" font-size="10.5" fill="#444" text-anchor="middle">595</text>
+<rect x="320.4" y="63.4" width="41.9" height="29.1" rx="2" fill="#e05a4f"><title>2~0%：488</title></rect>
+<text x="341.4" y="58.4" font-size="10.5" fill="#444" text-anchor="middle">488</text>
 <text x="341.4" y="262.0" font-size="10" fill="#555" text-anchor="middle">2~0%</text>
-<rect x="382.0" y="91.5" width="41.9" height="3.8" rx="2" fill="#e05a4f"><title>平：70</title></rect>
-<text x="403.0" y="86.5" font-size="10.5" fill="#444" text-anchor="middle">70</text>
+<rect x="382.0" y="88.5" width="41.9" height="3.9" rx="2" fill="#e05a4f"><title>平：66</title></rect>
+<text x="403.0" y="83.5" font-size="10.5" fill="#444" text-anchor="middle">66</text>
 <text x="403.0" y="262.0" font-size="10" fill="#555" text-anchor="middle">平</text>
-<rect x="443.7" y="95.3" width="41.9" height="129.4" rx="2" fill="#2e9e7b"><title>0~2%：-2411</title></rect>
-<text x="464.6" y="237.6" font-size="10.5" fill="#444" text-anchor="middle">-2411</text>
+<rect x="443.7" y="92.5" width="41.9" height="117.1" rx="2" fill="#2e9e7b"><title>0~2%：-1962</title></rect>
+<text x="464.6" y="222.5" font-size="10.5" fill="#444" text-anchor="middle">-1962</text>
 <text x="464.6" y="262.0" font-size="10" fill="#555" text-anchor="middle">0~2%</text>
-<rect x="505.3" y="95.3" width="41.9" height="106.9" rx="2" fill="#2e9e7b"><title>2~5%：-1993</title></rect>
-<text x="526.3" y="215.2" font-size="10.5" fill="#444" text-anchor="middle">-1993</text>
+<rect x="505.3" y="92.5" width="41.9" height="132.2" rx="2" fill="#2e9e7b"><title>2~5%：-2215</title></rect>
+<text x="526.3" y="237.6" font-size="10.5" fill="#444" text-anchor="middle">-2215</text>
 <text x="526.3" y="262.0" font-size="10" fill="#555" text-anchor="middle">2~5%</text>
-<rect x="567.0" y="95.3" width="41.9" height="8.6" rx="2" fill="#2e9e7b"><title>5~7%：-160</title></rect>
-<text x="587.9" y="116.9" font-size="10.5" fill="#444" text-anchor="middle">-160</text>
+<rect x="567.0" y="92.5" width="41.9" height="18.3" rx="2" fill="#2e9e7b"><title>5~7%：-306</title></rect>
+<text x="587.9" y="123.7" font-size="10.5" fill="#444" text-anchor="middle">-306</text>
 <text x="587.9" y="262.0" font-size="10" fill="#555" text-anchor="middle">5~7%</text>
-<rect x="628.6" y="95.3" width="41.9" height="3.5" rx="2" fill="#2e9e7b"><title>7%&lt;：-65</title></rect>
-<text x="649.5" y="111.8" font-size="10.5" fill="#444" text-anchor="middle">-65</text>
+<rect x="628.6" y="92.5" width="41.9" height="13.5" rx="2" fill="#2e9e7b"><title>7%&lt;：-226</title></rect>
+<text x="649.5" y="119.0" font-size="10.5" fill="#444" text-anchor="middle">-226</text>
 <text x="649.5" y="262.0" font-size="10" fill="#555" text-anchor="middle">7%&lt;</text>
-<rect x="690.2" y="95.3" width="41.9" height="1.0" rx="2" fill="#2e9e7b"><title>跌停：-6</title></rect>
-<text x="711.2" y="108.6" font-size="10.5" fill="#444" text-anchor="middle">-6</text>
+<rect x="690.2" y="92.5" width="41.9" height="2.3" rx="2" fill="#2e9e7b"><title>跌停：-39</title></rect>
+<text x="711.2" y="107.8" font-size="10.5" fill="#444" text-anchor="middle">-39</text>
 <text x="711.2" y="262.0" font-size="10" fill="#555" text-anchor="middle">跌停</text>
 </svg>

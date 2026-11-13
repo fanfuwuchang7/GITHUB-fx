@@ -2,28 +2,28 @@
 <rect width="760" height="300" fill="#ffffff"/>
 <text x="64" y="26" font-size="15" font-weight="600" fill="#222">行业主力净流出 Top（亿元）</text>
 <line x1="64" y1="63.354838709677416" x2="742" y2="63.354838709677416" stroke="#d8dee6" stroke-width="1"/>
-<rect x="77.6" y="63.4" width="57.6" height="161.3" rx="2" fill="#2e9e7b"><title>通信设备：-67</title></rect>
-<text x="106.4" y="237.6" font-size="10.5" fill="#444" text-anchor="middle">-67</text>
-<text x="106.4" y="262.0" font-size="10" fill="#555" text-anchor="middle">通信设备</text>
-<rect x="162.3" y="63.4" width="57.6" height="108.9" rx="2" fill="#2e9e7b"><title>消费电子：-45</title></rect>
-<text x="191.1" y="185.3" font-size="10.5" fill="#444" text-anchor="middle">-45</text>
-<text x="191.1" y="262.0" font-size="10" fill="#555" text-anchor="middle">消费电子</text>
-<rect x="247.1" y="63.4" width="57.6" height="86.9" rx="2" fill="#2e9e7b"><title>自动化设备：-36</title></rect>
-<text x="275.9" y="163.2" font-size="10.5" fill="#444" text-anchor="middle">-36</text>
-<text x="275.9" y="262.0" font-size="10" fill="#555" text-anchor="middle">自动化设备</text>
-<rect x="331.8" y="63.4" width="57.6" height="80.2" rx="2" fill="#2e9e7b"><title>元件：-33</title></rect>
-<text x="360.6" y="156.5" font-size="10.5" fill="#444" text-anchor="middle">-33</text>
-<text x="360.6" y="262.0" font-size="10" fill="#555" text-anchor="middle">元件</text>
-<rect x="416.6" y="63.4" width="57.6" height="75.4" rx="2" fill="#2e9e7b"><title>电池：-31</title></rect>
-<text x="445.4" y="151.7" font-size="10.5" fill="#444" text-anchor="middle">-31</text>
-<text x="445.4" y="262.0" font-size="10" fill="#555" text-anchor="middle">电池</text>
-<rect x="501.3" y="63.4" width="57.6" height="69.8" rx="2" fill="#2e9e7b"><title>汽车零部件：-29</title></rect>
-<text x="530.1" y="146.1" font-size="10.5" fill="#444" text-anchor="middle">-29</text>
-<text x="530.1" y="262.0" font-size="10" fill="#555" text-anchor="middle">汽车零部件</text>
-<rect x="586.1" y="63.4" width="57.6" height="69.6" rx="2" fill="#2e9e7b"><title>工业金属：-29</title></rect>
-<text x="614.9" y="146.0" font-size="10.5" fill="#444" text-anchor="middle">-29</text>
-<text x="614.9" y="262.0" font-size="10" fill="#555" text-anchor="middle">工业金属</text>
-<rect x="670.8" y="63.4" width="57.6" height="68.6" rx="2" fill="#2e9e7b"><title>游戏Ⅱ：-29</title></rect>
-<text x="699.6" y="144.9" font-size="10.5" fill="#444" text-anchor="middle">-29</text>
-<text x="699.6" y="262.0" font-size="10" fill="#555" text-anchor="middle">游戏Ⅱ</text>
+<rect x="77.6" y="63.4" width="57.6" height="161.3" rx="2" fill="#2e9e7b"><title>元件：-103</title></rect>
+<text x="106.4" y="237.6" font-size="10.5" fill="#444" text-anchor="middle">-103</text>
+<text x="106.4" y="262.0" font-size="10" fill="#555" text-anchor="middle">元件</text>
+<rect x="162.3" y="63.4" width="57.6" height="153.4" rx="2" fill="#2e9e7b"><title>通信设备：-98</title></rect>
+<text x="191.1" y="229.7" font-size="10.5" fill="#444" text-anchor="middle">-98</text>
+<text x="191.1" y="262.0" font-size="10" fill="#555" text-anchor="middle">通信设备</text>
+<rect x="247.1" y="63.4" width="57.6" height="119.9" rx="2" fill="#2e9e7b"><title>半导体：-76</title></rect>
+<text x="275.9" y="196.3" font-size="10.5" fill="#444" text-anchor="middle">-76</text>
+<text x="275.9" y="262.0" font-size="10" fill="#555" text-anchor="middle">半导体</text>
+<rect x="331.8" y="63.4" width="57.6" height="46.2" rx="2" fill="#2e9e7b"><title>消费电子：-29</title></rect>
+<text x="360.6" y="122.6" font-size="10.5" fill="#444" text-anchor="middle">-29</text>
+<text x="360.6" y="262.0" font-size="10" fill="#555" text-anchor="middle">消费电子</text>
+<rect x="416.6" y="63.4" width="57.6" height="38.6" rx="2" fill="#2e9e7b"><title>广告营销：-25</title></rect>
+<text x="445.4" y="114.9" font-size="10.5" fill="#444" text-anchor="middle">-25</text>
+<text x="445.4" y="262.0" font-size="10" fill="#555" text-anchor="middle">广告营销</text>
+<rect x="501.3" y="63.4" width="57.6" height="36.6" rx="2" fill="#2e9e7b"><title>自动化设备：-23</title></rect>
+<text x="530.1" y="112.9" font-size="10.5" fill="#444" text-anchor="middle">-23</text>
+<text x="530.1" y="262.0" font-size="10" fill="#555" text-anchor="middle">自动化设备</text>
+<rect x="586.1" y="63.4" width="57.6" height="35.2" rx="2" fill="#2e9e7b"><title>电池：-22</title></rect>
+<text x="614.9" y="111.6" font-size="10.5" fill="#444" text-anchor="middle">-22</text>
+<text x="614.9" y="262.0" font-size="10" fill="#555" text-anchor="middle">电池</text>
+<rect x="670.8" y="63.4" width="57.6" height="34.2" rx="2" fill="#2e9e7b"><title>工业金属：-22</title></rect>
+<text x="699.6" y="110.6" font-size="10.5" fill="#444" text-anchor="middle">-22</text>
+<text x="699.6" y="262.0" font-size="10" fill="#555" text-anchor="middle">工业金属</text>
 </svg>
