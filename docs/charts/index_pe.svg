@@ -5,28 +5,28 @@
 <rect x="76.1" y="224.6" width="51.2" height="19.4" rx="2" fill="#e05a4f"><title>上证50：12</title></rect>
 <text x="101.7" y="219.6" font-size="10.5" fill="#444" text-anchor="middle">12</text>
 <text x="101.7" y="262.0" font-size="10" fill="#555" text-anchor="middle">上证50</text>
-<rect x="151.4" y="221.3" width="51.2" height="22.7" rx="2" fill="#e05a4f"><title>沪深300：13</title></rect>
-<text x="177.0" y="216.3" font-size="10.5" fill="#444" text-anchor="middle">13</text>
+<rect x="151.4" y="221.2" width="51.2" height="22.8" rx="2" fill="#e05a4f"><title>沪深300：13</title></rect>
+<text x="177.0" y="216.2" font-size="10.5" fill="#444" text-anchor="middle">13</text>
 <text x="177.0" y="262.0" font-size="10" fill="#555" text-anchor="middle">沪深300</text>
-<rect x="226.7" y="215.2" width="51.2" height="28.8" rx="2" fill="#e05a4f"><title>上证指数：17</title></rect>
-<text x="252.3" y="210.2" font-size="10.5" fill="#444" text-anchor="middle">17</text>
+<rect x="226.7" y="215.0" width="51.2" height="29.0" rx="2" fill="#e05a4f"><title>上证指数：16</title></rect>
+<text x="252.3" y="210.0" font-size="10.5" fill="#444" text-anchor="middle">16</text>
 <text x="252.3" y="262.0" font-size="10" fill="#555" text-anchor="middle">上证指数</text>
-<rect x="302.1" y="193.7" width="51.2" height="50.3" rx="2" fill="#e05a4f"><title>中证500：28</title></rect>
-<text x="327.7" y="188.7" font-size="10.5" fill="#444" text-anchor="middle">28</text>
+<rect x="302.1" y="193.2" width="51.2" height="50.8" rx="2" fill="#e05a4f"><title>中证500：27</title></rect>
+<text x="327.7" y="188.2" font-size="10.5" fill="#444" text-anchor="middle">27</text>
 <text x="327.7" y="262.0" font-size="10" fill="#555" text-anchor="middle">中证500</text>
-<rect x="377.4" y="179.9" width="51.2" height="64.1" rx="2" fill="#e05a4f"><title>深证成指：35</title></rect>
-<text x="403.0" y="174.9" font-size="10.5" fill="#444" text-anchor="middle">35</text>
+<rect x="377.4" y="178.8" width="51.2" height="65.2" rx="2" fill="#e05a4f"><title>深证成指：34</title></rect>
+<text x="403.0" y="173.8" font-size="10.5" fill="#444" text-anchor="middle">34</text>
 <text x="403.0" y="262.0" font-size="10" fill="#555" text-anchor="middle">深证成指</text>
-<rect x="452.7" y="173.3" width="51.2" height="70.7" rx="2" fill="#e05a4f"><title>北证50：38</title></rect>
-<text x="478.3" y="168.3" font-size="10.5" fill="#444" text-anchor="middle">38</text>
+<rect x="452.7" y="173.9" width="51.2" height="70.1" rx="2" fill="#e05a4f"><title>北证50：36</title></rect>
+<text x="478.3" y="168.9" font-size="10.5" fill="#444" text-anchor="middle">36</text>
 <text x="478.3" y="262.0" font-size="10" fill="#555" text-anchor="middle">北证50</text>
-<rect x="528.1" y="172.9" width="51.2" height="71.1" rx="2" fill="#e05a4f"><title>中证1000：38</title></rect>
-<text x="553.7" y="167.9" font-size="10.5" fill="#444" text-anchor="middle">38</text>
+<rect x="528.1" y="171.9" width="51.2" height="72.1" rx="2" fill="#e05a4f"><title>中证1000：37</title></rect>
+<text x="553.7" y="166.9" font-size="10.5" fill="#444" text-anchor="middle">37</text>
 <text x="553.7" y="262.0" font-size="10" fill="#555" text-anchor="middle">中证1000</text>
-<rect x="603.4" y="161.3" width="51.2" height="82.7" rx="2" fill="#e05a4f"><title>创业板指：44</title></rect>
-<text x="629.0" y="156.3" font-size="10.5" fill="#444" text-anchor="middle">44</text>
+<rect x="603.4" y="160.9" width="51.2" height="83.1" rx="2" fill="#e05a4f"><title>创业板指：42</title></rect>
+<text x="629.0" y="155.9" font-size="10.5" fill="#444" text-anchor="middle">42</text>
 <text x="629.0" y="262.0" font-size="10" fill="#555" text-anchor="middle">创业板指</text>
-<rect x="678.7" y="63.4" width="51.2" height="180.6" rx="2" fill="#e05a4f"><title>科创50：94</title></rect>
-<text x="704.3" y="58.4" font-size="10.5" fill="#444" text-anchor="middle">94</text>
+<rect x="678.7" y="63.4" width="51.2" height="180.6" rx="2" fill="#e05a4f"><title>科创50：89</title></rect>
+<text x="704.3" y="58.4" font-size="10.5" fill="#444" text-anchor="middle">89</text>
 <text x="704.3" y="262.0" font-size="10" fill="#555" text-anchor="middle">科创50</text>
 </svg>
