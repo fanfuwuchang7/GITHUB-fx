@@ -1,29 +1,29 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 300" width="100%" style="max-width:760px;font-family:'WenQuanYi Micro Hei',sans-serif">
 <rect width="760" height="300" fill="#ffffff"/>
 <text x="64" y="26" font-size="15" font-weight="600" fill="#222">样本ETF当日净申购 Top（亿元）</text>
-<line x1="64" y1="224.64516129032256" x2="742" y2="224.64516129032256" stroke="#d8dee6" stroke-width="1"/>
-<rect x="77.6" y="63.4" width="57.6" height="161.3" rx="2" fill="#e05a4f"><title>创业板ETF：+10.2</title></rect>
-<text x="106.4" y="58.4" font-size="10.5" fill="#444" text-anchor="middle">+10.2</text>
-<text x="106.4" y="262.0" font-size="10" fill="#555" text-anchor="middle">创业板ETF</text>
-<rect x="162.3" y="165.0" width="57.6" height="59.6" rx="2" fill="#e05a4f"><title>中概互联网E：+3.8</title></rect>
-<text x="191.1" y="160.0" font-size="10.5" fill="#444" text-anchor="middle">+3.8</text>
-<text x="191.1" y="262.0" font-size="10" fill="#555" text-anchor="middle">中概互联网E</text>
-<rect x="247.1" y="214.9" width="57.6" height="9.7" rx="2" fill="#e05a4f"><title>芯片ETF国：+0.6</title></rect>
-<text x="275.9" y="209.9" font-size="10.5" fill="#444" text-anchor="middle">+0.6</text>
-<text x="275.9" y="262.0" font-size="10" fill="#555" text-anchor="middle">芯片ETF国</text>
-<rect x="331.8" y="220.5" width="57.6" height="4.1" rx="2" fill="#e05a4f"><title>科技ETF华：+0.3</title></rect>
-<text x="360.6" y="215.5" font-size="10.5" fill="#444" text-anchor="middle">+0.3</text>
-<text x="360.6" y="262.0" font-size="10" fill="#555" text-anchor="middle">科技ETF华</text>
-<rect x="416.6" y="221.1" width="57.6" height="3.5" rx="2" fill="#e05a4f"><title>煤炭ETF国：+0.2</title></rect>
-<text x="445.4" y="216.1" font-size="10.5" fill="#444" text-anchor="middle">+0.2</text>
-<text x="445.4" y="262.0" font-size="10" fill="#555" text-anchor="middle">煤炭ETF国</text>
-<rect x="501.3" y="222.4" width="57.6" height="2.2" rx="2" fill="#e05a4f"><title>军工ETF国：+0.1</title></rect>
-<text x="530.1" y="217.4" font-size="10.5" fill="#444" text-anchor="middle">+0.1</text>
-<text x="530.1" y="262.0" font-size="10" fill="#555" text-anchor="middle">军工ETF国</text>
-<rect x="586.1" y="223.3" width="57.6" height="1.4" rx="2" fill="#e05a4f"><title>芯片ETF华：+0.1</title></rect>
-<text x="614.9" y="218.3" font-size="10.5" fill="#444" text-anchor="middle">+0.1</text>
-<text x="614.9" y="262.0" font-size="10" fill="#555" text-anchor="middle">芯片ETF华</text>
-<rect x="670.8" y="224.3" width="57.6" height="1.0" rx="2" fill="#e05a4f"><title>深证100E：+0.0</title></rect>
-<text x="699.6" y="219.3" font-size="10.5" fill="#444" text-anchor="middle">+0.0</text>
-<text x="699.6" y="262.0" font-size="10" fill="#555" text-anchor="middle">深证100E</text>
+<line x1="64" y1="224.6451612903226" x2="742" y2="224.6451612903226" stroke="#d8dee6" stroke-width="1"/>
+<rect x="77.6" y="63.4" width="57.6" height="161.3" rx="2" fill="#e05a4f"><title>沪深300E：+55.9</title></rect>
+<text x="106.4" y="58.4" font-size="10.5" fill="#444" text-anchor="middle">+55.9</text>
+<text x="106.4" y="262.0" font-size="10" fill="#555" text-anchor="middle">沪深300E</text>
+<rect x="162.3" y="157.1" width="57.6" height="67.6" rx="2" fill="#e05a4f"><title>创业板ETF：+23.4</title></rect>
+<text x="191.1" y="152.1" font-size="10.5" fill="#444" text-anchor="middle">+23.4</text>
+<text x="191.1" y="262.0" font-size="10" fill="#555" text-anchor="middle">创业板ETF</text>
+<rect x="247.1" y="197.4" width="57.6" height="27.3" rx="2" fill="#e05a4f"><title>上证50ET：+9.5</title></rect>
+<text x="275.9" y="192.4" font-size="10.5" fill="#444" text-anchor="middle">+9.5</text>
+<text x="275.9" y="262.0" font-size="10" fill="#555" text-anchor="middle">上证50ET</text>
+<rect x="331.8" y="200.1" width="57.6" height="24.6" rx="2" fill="#e05a4f"><title>中证500E：+8.5</title></rect>
+<text x="360.6" y="195.1" font-size="10.5" fill="#444" text-anchor="middle">+8.5</text>
+<text x="360.6" y="262.0" font-size="10" fill="#555" text-anchor="middle">中证500E</text>
+<rect x="416.6" y="205.5" width="57.6" height="19.1" rx="2" fill="#e05a4f"><title>通信ETF国：+6.6</title></rect>
+<text x="445.4" y="200.5" font-size="10.5" fill="#444" text-anchor="middle">+6.6</text>
+<text x="445.4" y="262.0" font-size="10" fill="#555" text-anchor="middle">通信ETF国</text>
+<rect x="501.3" y="211.7" width="57.6" height="13.0" rx="2" fill="#e05a4f"><title>银行ETF华：+4.5</title></rect>
+<text x="530.1" y="206.7" font-size="10.5" fill="#444" text-anchor="middle">+4.5</text>
+<text x="530.1" y="262.0" font-size="10" fill="#555" text-anchor="middle">银行ETF华</text>
+<rect x="586.1" y="217.0" width="57.6" height="7.6" rx="2" fill="#e05a4f"><title>半导体ETF：+2.6</title></rect>
+<text x="614.9" y="212.0" font-size="10.5" fill="#444" text-anchor="middle">+2.6</text>
+<text x="614.9" y="262.0" font-size="10" fill="#555" text-anchor="middle">半导体ETF</text>
+<rect x="670.8" y="218.4" width="57.6" height="6.2" rx="2" fill="#e05a4f"><title>芯片ETF华：+2.2</title></rect>
+<text x="699.6" y="213.4" font-size="10.5" fill="#444" text-anchor="middle">+2.2</text>
+<text x="699.6" y="262.0" font-size="10" fill="#555" text-anchor="middle">芯片ETF华</text>
 </svg>
