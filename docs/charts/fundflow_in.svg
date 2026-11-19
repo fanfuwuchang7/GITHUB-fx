@@ -2,28 +2,28 @@
 <rect width="760" height="300" fill="#ffffff"/>
 <text x="64" y="26" font-size="15" font-weight="600" fill="#222">行业主力净流入 Top（亿元）</text>
 <line x1="64" y1="224.6451612903226" x2="742" y2="224.6451612903226" stroke="#d8dee6" stroke-width="1"/>
-<rect x="77.6" y="63.4" width="57.6" height="161.3" rx="2" fill="#e05a4f"><title>元件：+46</title></rect>
-<text x="106.4" y="58.4" font-size="10.5" fill="#444" text-anchor="middle">+46</text>
-<text x="106.4" y="262.0" font-size="10" fill="#555" text-anchor="middle">元件</text>
-<rect x="162.3" y="67.0" width="57.6" height="157.6" rx="2" fill="#e05a4f"><title>半导体：+45</title></rect>
-<text x="191.1" y="62.0" font-size="10.5" fill="#444" text-anchor="middle">+45</text>
-<text x="191.1" y="262.0" font-size="10" fill="#555" text-anchor="middle">半导体</text>
-<rect x="247.1" y="141.1" width="57.6" height="83.6" rx="2" fill="#e05a4f"><title>通信设备：+24</title></rect>
-<text x="275.9" y="136.1" font-size="10.5" fill="#444" text-anchor="middle">+24</text>
-<text x="275.9" y="262.0" font-size="10" fill="#555" text-anchor="middle">通信设备</text>
-<rect x="331.8" y="163.4" width="57.6" height="61.3" rx="2" fill="#e05a4f"><title>IT服务Ⅱ：+18</title></rect>
-<text x="360.6" y="158.4" font-size="10.5" fill="#444" text-anchor="middle">+18</text>
-<text x="360.6" y="262.0" font-size="10" fill="#555" text-anchor="middle">IT服务Ⅱ</text>
-<rect x="416.6" y="187.8" width="57.6" height="36.9" rx="2" fill="#e05a4f"><title>通信服务：+11</title></rect>
-<text x="445.4" y="182.8" font-size="10.5" fill="#444" text-anchor="middle">+11</text>
-<text x="445.4" y="262.0" font-size="10" fill="#555" text-anchor="middle">通信服务</text>
-<rect x="501.3" y="192.9" width="57.6" height="31.8" rx="2" fill="#e05a4f"><title>消费电子：+9</title></rect>
-<text x="530.1" y="187.9" font-size="10.5" fill="#444" text-anchor="middle">+9</text>
-<text x="530.1" y="262.0" font-size="10" fill="#555" text-anchor="middle">消费电子</text>
-<rect x="586.1" y="208.0" width="57.6" height="16.7" rx="2" fill="#e05a4f"><title>计算机设备：+5</title></rect>
-<text x="614.9" y="203.0" font-size="10.5" fill="#444" text-anchor="middle">+5</text>
-<text x="614.9" y="262.0" font-size="10" fill="#555" text-anchor="middle">计算机设备</text>
-<rect x="670.8" y="208.2" width="57.6" height="16.5" rx="2" fill="#e05a4f"><title>航运港口：+5</title></rect>
-<text x="699.6" y="203.2" font-size="10.5" fill="#444" text-anchor="middle">+5</text>
-<text x="699.6" y="262.0" font-size="10" fill="#555" text-anchor="middle">航运港口</text>
+<rect x="77.6" y="63.4" width="57.6" height="161.3" rx="2" fill="#e05a4f"><title>半导体：+28</title></rect>
+<text x="106.4" y="58.4" font-size="10.5" fill="#444" text-anchor="middle">+28</text>
+<text x="106.4" y="262.0" font-size="10" fill="#555" text-anchor="middle">半导体</text>
+<rect x="162.3" y="201.2" width="57.6" height="23.4" rx="2" fill="#e05a4f"><title>家电零部件：+4</title></rect>
+<text x="191.1" y="196.2" font-size="10.5" fill="#444" text-anchor="middle">+4</text>
+<text x="191.1" y="262.0" font-size="10" fill="#555" text-anchor="middle">家电零部件</text>
+<rect x="247.1" y="205.7" width="57.6" height="18.9" rx="2" fill="#e05a4f"><title>电子化学品：+3</title></rect>
+<text x="275.9" y="200.7" font-size="10.5" fill="#444" text-anchor="middle">+3</text>
+<text x="275.9" y="262.0" font-size="10" fill="#555" text-anchor="middle">电子化学品</text>
+<rect x="331.8" y="206.5" width="57.6" height="18.1" rx="2" fill="#e05a4f"><title>小家电：+3</title></rect>
+<text x="360.6" y="201.5" font-size="10.5" fill="#444" text-anchor="middle">+3</text>
+<text x="360.6" y="262.0" font-size="10" fill="#555" text-anchor="middle">小家电</text>
+<rect x="416.6" y="208.5" width="57.6" height="16.1" rx="2" fill="#e05a4f"><title>造纸：+3</title></rect>
+<text x="445.4" y="203.5" font-size="10.5" fill="#444" text-anchor="middle">+3</text>
+<text x="445.4" y="262.0" font-size="10" fill="#555" text-anchor="middle">造纸</text>
+<rect x="501.3" y="208.5" width="57.6" height="16.1" rx="2" fill="#e05a4f"><title>元件：+3</title></rect>
+<text x="530.1" y="203.5" font-size="10.5" fill="#444" text-anchor="middle">+3</text>
+<text x="530.1" y="262.0" font-size="10" fill="#555" text-anchor="middle">元件</text>
+<rect x="586.1" y="210.8" width="57.6" height="13.8" rx="2" fill="#e05a4f"><title>个护用品：+2</title></rect>
+<text x="614.9" y="205.8" font-size="10.5" fill="#444" text-anchor="middle">+2</text>
+<text x="614.9" y="262.0" font-size="10" fill="#555" text-anchor="middle">个护用品</text>
+<rect x="670.8" y="216.5" width="57.6" height="8.2" rx="2" fill="#e05a4f"><title>休闲食品：+1</title></rect>
+<text x="699.6" y="211.5" font-size="10.5" fill="#444" text-anchor="middle">+1</text>
+<text x="699.6" y="262.0" font-size="10" fill="#555" text-anchor="middle">休闲食品</text>
 </svg>

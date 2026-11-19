@@ -2,21 +2,21 @@
 <rect width="760" height="300" fill="#ffffff"/>
 <text x="58" y="26" font-size="15" font-weight="600" fill="#222">两市成交额趋势（亿元，历史为折算估算）</text>
 <line x1="58" y1="44.0" x2="742" y2="44.0" stroke="#eef1f5" stroke-width="1"/>
-<text x="52" y="47.0" font-size="10" fill="#888" text-anchor="end">19391</text>
+<text x="52" y="47.0" font-size="10" fill="#888" text-anchor="end">19031</text>
 <line x1="58" y1="96.5" x2="742" y2="96.5" stroke="#eef1f5" stroke-width="1"/>
-<text x="52" y="99.5" font-size="10" fill="#888" text-anchor="end">17835</text>
+<text x="52" y="99.5" font-size="10" fill="#888" text-anchor="end">17498</text>
 <line x1="58" y1="149.0" x2="742" y2="149.0" stroke="#eef1f5" stroke-width="1"/>
-<text x="52" y="152.0" font-size="10" fill="#888" text-anchor="end">16279</text>
+<text x="52" y="152.0" font-size="10" fill="#888" text-anchor="end">15964</text>
 <line x1="58" y1="201.5" x2="742" y2="201.5" stroke="#eef1f5" stroke-width="1"/>
-<text x="52" y="204.5" font-size="10" fill="#888" text-anchor="end">14723</text>
+<text x="52" y="204.5" font-size="10" fill="#888" text-anchor="end">14431</text>
 <line x1="58" y1="254.0" x2="742" y2="254.0" stroke="#eef1f5" stroke-width="1"/>
-<text x="52" y="257.0" font-size="10" fill="#888" text-anchor="end">13167</text>
-<polyline points="58.0,220.0 96.0,81.5 134.0,214.5 172.0,232.2 210.0,216.2 248.0,210.0 286.0,149.2 324.0,103.7 362.0,143.2 400.0,61.5 438.0,80.6 476.0,178.8 514.0,230.4 552.0,236.5 590.0,201.5 628.0,138.3 666.0,186.1 704.0,210.3 742.0,210.9" fill="none" stroke="#3b7dd8" stroke-width="2.2" stroke-linejoin="round"/>
-<text x="58.0" y="274" font-size="10" fill="#666" text-anchor="middle">10-22</text>
-<text x="172.0" y="274" font-size="10" fill="#666" text-anchor="middle">10-27</text>
-<text x="286.0" y="274" font-size="10" fill="#666" text-anchor="middle">10-30</text>
-<text x="400.0" y="274" font-size="10" fill="#666" text-anchor="middle">11-04</text>
-<text x="514.0" y="274" font-size="10" fill="#666" text-anchor="middle">11-09</text>
-<text x="628.0" y="274" font-size="10" fill="#666" text-anchor="middle">11-12</text>
-<text x="742.0" y="274" font-size="10" fill="#666" text-anchor="middle">11-17</text>
+<text x="52" y="257.0" font-size="10" fill="#888" text-anchor="end">12898</text>
+<polyline points="58.0,82.1 96.0,214.4 134.0,232.0 172.0,216.1 210.0,209.7 248.0,149.3 286.0,103.4 324.0,142.5 362.0,61.5 400.0,80.8 438.0,178.6 476.0,230.0 514.0,236.5 552.0,201.8 590.0,138.7 628.0,185.8 666.0,209.6 704.0,210.7 742.0,235.7" fill="none" stroke="#3b7dd8" stroke-width="2.2" stroke-linejoin="round"/>
+<text x="58.0" y="274" font-size="10" fill="#666" text-anchor="middle">10-23</text>
+<text x="172.0" y="274" font-size="10" fill="#666" text-anchor="middle">10-28</text>
+<text x="286.0" y="274" font-size="10" fill="#666" text-anchor="middle">11-02</text>
+<text x="400.0" y="274" font-size="10" fill="#666" text-anchor="middle">11-05</text>
+<text x="514.0" y="274" font-size="10" fill="#666" text-anchor="middle">11-10</text>
+<text x="628.0" y="274" font-size="10" fill="#666" text-anchor="middle">11-13</text>
+<text x="742.0" y="274" font-size="10" fill="#666" text-anchor="middle">11-18</text>
 </svg>
